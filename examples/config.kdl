@@ -1,0 +1,38 @@
+timeout 1000 // ms
+
+font {
+  size 16.0
+  line-height 20.0
+}
+
+color {
+  fg "#ffffff"
+  bg "#000000"
+}
+
+layout {
+  width 360
+  max-height 720
+  padding 16
+  anchor "br" // tr | br | bl | tl
+  margin {
+    top 0
+    right 4
+    bottom 4
+    left 0
+  }
+}
+
+bind {
+  B desc="Open browser" { spawn "$BROWSER" "https://www.google.com"; }
+  A desc="Apps" {
+    T desc="Terminal" { spawn "$TERMINAL" "-c" "sh"; }
+    C desc="Calculator" { spawn "gnome-calculator"; }
+    N desc="Niri messages" {
+      L desc="Layers" { sh "niri msg layers"; }
+      O desc="Layers" { sh "niri msg outputs"; }
+    }
+  }
+  Ctrl+P { sh "niri msg windows"; }
+  Ctrl+Shift+P { spawn "nautilus"; }
+}
