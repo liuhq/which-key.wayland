@@ -22,7 +22,8 @@ fn main() {
     {
         match std::fs::read_to_string("./examples/config.kdl") {
             Ok(raw) => {
-                let _ = config_parse(&raw);
+                let raw = config_parse(&raw);
+                println!("{:#?}", raw);
             }
             Err(err) => eprintln!("{err}"),
         };

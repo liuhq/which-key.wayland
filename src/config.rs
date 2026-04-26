@@ -7,6 +7,7 @@ use smithay_client_toolkit::shell::wlr_layer::Anchor;
 
 use crate::{keybind::KeyBindMap, layer::color::WkColor};
 
+#[derive(Debug)]
 pub struct WkEntry {
     pub prefix: String,
     pub separator: String,
@@ -29,6 +30,7 @@ impl std::fmt::Display for WkEntry {
     }
 }
 
+#[derive(Debug)]
 pub struct Margin {
     pub top: i32,
     pub right: i32,
@@ -36,24 +38,29 @@ pub struct Margin {
     pub left: i32,
 }
 
+#[derive(Debug)]
 pub struct ConfigFont {
     pub size: f32,
     pub line_height: f32,
 }
 
+#[derive(Debug)]
 pub struct ConfigColor {
     pub fg: WkColor,
     pub bg: WkColor,
 }
 
+#[derive(Debug)]
 pub struct ConfigLayout {
     pub width: u32,
     pub max_height: u32,
+    pub max_items: u32,
     pub padding: u32,
     pub anchor: Anchor,
     pub margin: Margin,
 }
 
+#[derive(Debug)]
 pub struct Config {
     pub timeout: u32,
     pub keybinds: Vec<WkEntry>,
@@ -96,6 +103,7 @@ impl Config {
             layout: ConfigLayout {
                 width: 360,
                 max_height: 720,
+                max_items: 10,
                 padding: 16,
                 anchor: Anchor::union(Anchor::RIGHT, Anchor::BOTTOM),
                 margin: Margin {

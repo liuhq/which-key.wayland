@@ -13,8 +13,9 @@ color {
 layout {
   width 360
   max-height 720
+  max-items 10
   padding 16
-  anchor "br" // tr | br | bl | tl
+  anchor 1 // 1:tr | 2:br | 3:bl | 4:tl
   margin {
     top 0
     right 4
