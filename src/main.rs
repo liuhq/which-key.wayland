@@ -10,24 +10,10 @@ use smithay_client_toolkit::{
     },
     shm::{Shm, slot::SlotPool},
 };
-use which_key_wayland::{
-    config::{Config, parser::config_parse},
-    layer::client::WkLayer,
-};
+use which_key_wayland::{config::parser::config_parse, layer::client::WkLayer};
 
 fn main() {
     env_logger::init();
-
-    // TODO: test config parser
-    {
-        match std::fs::read_to_string("./examples/config.kdl") {
-            Ok(raw) => {
-                let raw = config_parse(&raw);
-                println!("{:#?}", raw);
-            }
-            Err(err) => eprintln!("{err}"),
-        };
-    }
 
     let conn = Connection::connect_to_env().expect("Failed to connect to Wayland");
     let (globals, mut event_queue) = registry_queue_init(&conn).expect("Failed to init registry");
@@ -41,47 +27,51 @@ fn main() {
     let layer =
         layer_shell.create_layer_surface(&qh, surface, Layer::Overlay, Some("simple_layer"), None);
 
-    let mock = Config::mock();
+    // NOTE: example config
+    match std::fs::read_to_string("./examples/config.kdl") {
+        Ok(raw) => match config_parse(&raw) {
+            Ok(config) => {
+                layer.set_anchor(config.layout.anchor);
+                layer.set_margin(
+                    config.layout.margin.top,
+                    config.layout.margin.right,
+                    config.layout.margin.bottom,
+                    config.layout.margin.left,
+                );
+                layer.set_keyboard_interactivity(KeyboardInteractivity::OnDemand);
+                layer.set_size(config.layout.width, 1);
+                layer.commit();
 
-    layer.set_anchor(mock.layout.anchor);
-    layer.set_margin(
-        mock.layout.margin.top,
-        mock.layout.margin.right,
-        mock.layout.margin.bottom,
-        mock.layout.margin.left,
-    );
-    layer.set_keyboard_interactivity(KeyboardInteractivity::OnDemand);
-    layer.set_size(mock.layout.width, mock.layout.max_height);
-    layer.commit();
+                let pool = SlotPool::new((config.layout.width * 4) as usize, &shm)
+                    .expect("Failed to create pool");
 
-    let pool = SlotPool::new(
-        (mock.layout.width * 4 * mock.layout.max_height) as usize,
-        &shm,
-    )
-    .expect("Failed to create pool");
+                let mut wk_layer = WkLayer {
+                    registry_state: RegistryState::new(&globals),
+                    output_state: OutputState::new(&globals, &qh),
+                    seat_state: SeatState::new(&globals, &qh),
+                    shm,
+                    pool,
+                    buffer: None,
+                    layer,
+                    exit: false,
+                    first_configure: true,
+                    shift: None,
+                    keyboard: None,
+                    keyboard_focus: false,
+                    config,
+                };
 
-    let mut wk_layer = WkLayer {
-        registry_state: RegistryState::new(&globals),
-        output_state: OutputState::new(&globals, &qh),
-        seat_state: SeatState::new(&globals, &qh),
-        shm,
-        pool,
-        buffer: None,
-        layer,
-        exit: false,
-        first_configure: true,
-        shift: None,
-        keyboard: None,
-        keyboard_focus: false,
-        config: mock,
+                loop {
+                    event_queue.blocking_dispatch(&mut wk_layer).unwrap();
+
+                    if wk_layer.exit {
+                        println!("exiting wk_layer");
+                        break;
+                    }
+                }
+            }
+            Err(err) => eprintln!("{err}"),
+        },
+        Err(err) => eprintln!("{err}"),
     };
-
-    loop {
-        event_queue.blocking_dispatch(&mut wk_layer).unwrap();
-
-        if wk_layer.exit {
-            println!("exiting wk_layer");
-            break;
-        }
-    }
 }

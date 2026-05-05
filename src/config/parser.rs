@@ -1,8 +1,12 @@
+use std::rc::Rc;
+
 use kdl::{KdlDocument, KdlValue};
 use smithay_client_toolkit::shell::wlr_layer::Anchor;
 
 use crate::{
-    config::{Config, ConfigColor, ConfigFont, ConfigLayout, Margin, bind::bind_parser},
+    config::{
+        Config, ConfigColor, ConfigFont, ConfigLayout, ConfigSeparator, Margin, bind::bind_parser,
+    },
     layer::color::WkColor,
 };
 
@@ -53,15 +57,16 @@ pub fn config_parse(raw: &str) -> anyhow::Result<Config> {
     let font = parse_font(&config)?;
     let color = parse_color(&config)?;
     let layout = parse_layout(&config)?;
-    let bind = bind_parser(&config)?;
+    let separator = parse_separator(&config)?;
+    let bind = bind_parser(&config, &separator)?;
 
     Ok(Config {
         timeout,
-        keybinds: vec![],
         bind,
         font,
         color,
         layout,
+        separator,
     })
 }
 
@@ -116,7 +121,6 @@ fn parse_layout(config: &KdlDocument) -> anyhow::Result<ConfigLayout> {
     let layout = get_children(config, "layout")?;
 
     let width = get_u32(layout, "width", "layout.width")?;
-    let max_height = get_u32(layout, "max-height", "layout.max-height")?;
     let max_items = get_u32(layout, "max-items", "layout.max-items")?;
     let padding = get_u32(layout, "padding", "layout.padding")?;
     let anchor = parse_anchor(get_integer(layout, "anchor", "layout.anchor")?);
@@ -124,10 +128,18 @@ fn parse_layout(config: &KdlDocument) -> anyhow::Result<ConfigLayout> {
 
     Ok(ConfigLayout {
         width,
-        max_height,
         max_items,
         padding,
         anchor,
         margin,
     })
+}
+
+fn parse_separator(config: &KdlDocument) -> anyhow::Result<ConfigSeparator> {
+    let sep = get_children(config, "separator")?;
+
+    let action = Rc::from(get_string(sep, "action", "separator.action")?);
+    let group = Rc::from(get_string(sep, "group", "separator.group")?);
+
+    Ok(ConfigSeparator { action, group })
 }

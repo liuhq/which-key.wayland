@@ -47,7 +47,7 @@ impl<'a> WkText<'a> {
 }
 
 impl<'a> WkText<'a> {
-    pub(crate) fn max_width(&mut self, text: Vec<&String>) -> u32 {
+    pub(crate) fn max_width(&mut self, text: Vec<&str>) -> u32 {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let mut max_w: f32 = 0.0;
         {

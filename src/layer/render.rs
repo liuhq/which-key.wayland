@@ -2,7 +2,8 @@ use cosmic_text::Wrap;
 use tiny_skia::{BYTES_PER_PIXEL, PixmapMut};
 
 use crate::{
-    config::{Config, WkEntry},
+    config::Config,
+    keybind::page::Page,
     layer::{
         color::{OPAQUE_ALPHA, WkColorPixelOps},
         text::WkText,
@@ -13,11 +14,11 @@ use crate::{
 pub(crate) struct WkRender<'a> {
     pub(crate) text: WkText<'a>,
     config: &'a Config,
-    entries: Vec<&'a WkEntry>,
+    entries: Page<'a>,
 }
 
 impl<'a> WkRender<'a> {
-    pub(crate) fn new(config: &'a Config, entries: Vec<&'a WkEntry>, text: WkText<'a>) -> Self {
+    pub(crate) fn new(config: &'a Config, entries: Page<'a>, text: WkText<'a>) -> Self {
         Self {
             text,
             config,
@@ -26,10 +27,8 @@ impl<'a> WkRender<'a> {
     }
 }
 
-impl<'r> WkRender<'r> {
+impl<'a> WkRender<'a> {
     pub(crate) fn draw(&mut self, size: Size<u32>, canvas: &mut [u8]) {
-        let entries = &self.entries;
-
         let mut pixmap = PixmapMut::from_bytes(canvas, size.width(), size.height())
             .expect("Can't create PixmapMut");
         pixmap.fill(self.config.color.bg.into());
@@ -40,56 +39,62 @@ impl<'r> WkRender<'r> {
         let usable_w = self.config.without_padding(size.width());
         let mut current_y = self.config.layout.padding;
 
-        let pref_w = self
+        let key_w = self
             .text
-            .max_width(entries.iter().map(|e| &e.prefix).collect());
-        let sepr_w = self
-            .text
-            .max_width(entries.iter().map(|e| &e.separator).collect());
-        let desc_w = usable_w - pref_w - sepr_w;
+            .max_width(self.entries.items.iter().map(|(k, _)| k.as_str()).collect());
+        let sep_w = self.text.max_width(
+            self.entries
+                .items
+                .iter()
+                .map(|(_, b)| b.separator.as_ref())
+                .collect(),
+        );
+        let des_w = usable_w - key_w - sep_w;
 
         let fg: cosmic_text::Color = self.config.color.fg.into();
 
-        for entry in entries {
-            let usable_h = (size.height() - current_y - self.config.layout.padding).min(max_height as u32);
+        for entry in &self.entries.items {
+            let usable_h =
+                (size.height() - current_y - self.config.layout.padding).min(max_height as u32);
+            let (key, bind) = entry;
 
-            self.text.set_size(Size::new(pref_w, size.height()).into());
+            self.text.set_size(Size::new(key_w, size.height()).into());
             self.text.set_wrap(Wrap::None);
-            self.text.set_text(&entry.prefix);
+            self.text.set_text(key);
             Self::inner_draw(
                 &mut self.text,
                 pixmap_data,
                 Offset::new(self.config.layout.padding, current_y),
-                Size::new(pref_w, usable_h),
+                Size::new(key_w, usable_h),
                 stride,
                 fg,
             );
 
-            self.text.set_size(Size::new(sepr_w, size.height()).into());
+            self.text.set_size(Size::new(sep_w, size.height()).into());
             self.text.set_wrap(Wrap::None);
-            self.text.set_text(&entry.separator);
+            self.text.set_text(&bind.separator);
             Self::inner_draw(
                 &mut self.text,
                 pixmap_data,
-                Offset::new(self.config.layout.padding + pref_w, current_y),
-                Size::new(sepr_w, usable_h),
+                Offset::new(self.config.layout.padding + key_w, current_y),
+                Size::new(sep_w, usable_h),
                 stride,
                 fg,
             );
 
-            self.text.set_size(Size::new(desc_w, size.height()).into());
+            self.text.set_size(Size::new(des_w, size.height()).into());
             self.text.set_wrap(Wrap::Word);
-            self.text.set_text(&entry.description);
+            self.text.set_text(&bind.desc);
             Self::inner_draw(
                 &mut self.text,
                 pixmap_data,
-                Offset::new(self.config.layout.padding + pref_w + sepr_w, current_y),
-                Size::new(desc_w, usable_h),
+                Offset::new(self.config.layout.padding + key_w + sep_w, current_y),
+                Size::new(des_w, usable_h),
                 stride,
                 fg,
             );
 
-            let lines_offset = self.text.lines_h(&entry.description, desc_w);
+            let lines_offset = self.text.lines_h(&bind.desc, des_w);
 
             current_y += lines_offset;
         }
