@@ -12,13 +12,13 @@ use crate::{
 };
 
 pub(crate) struct WkRender<'a> {
-    pub(crate) text: WkText<'a>,
+    pub(crate) text: WkText,
     config: &'a Config,
     entries: Page<'a>,
 }
 
 impl<'a> WkRender<'a> {
-    pub(crate) fn new(config: &'a Config, entries: Page<'a>, text: WkText<'a>) -> Self {
+    pub(crate) fn new(config: &'a Config, entries: Page<'a>, text: WkText) -> Self {
         Self {
             text,
             config,

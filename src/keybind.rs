@@ -3,7 +3,7 @@ pub mod page;
 
 use std::{collections::BTreeMap, rc::Rc};
 
-use crate::keybind::{actions::Action, page::Page};
+use crate::keybind::actions::Action;
 
 #[derive(Debug)]
 pub struct Bind {

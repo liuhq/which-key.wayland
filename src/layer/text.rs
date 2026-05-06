@@ -1,22 +1,24 @@
-use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache, Wrap};
+use cosmic_text::{
+    Attrs, AttrsOwned, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache, Wrap,
+};
 
 use crate::layer::unit::{Offset, Size};
 
-pub(crate) struct WkText<'a> {
+pub(crate) struct WkText {
     pub(crate) font_system: FontSystem,
     pub(crate) swash_cache: SwashCache,
     pub(crate) buffer: Buffer,
     metrics: Metrics,
-    attrs: Attrs<'a>,
+    attrs: AttrsOwned,
 }
 
-impl<'a> WkText<'a> {
+impl WkText {
     pub(crate) fn new(font_size: f32, line_height: f32) -> Self {
         let mut font_system = FontSystem::new();
         let swash_cache = SwashCache::new();
         let metrics = Metrics::new(font_size, line_height);
         let buffer = Buffer::new(&mut font_system, metrics);
-        let attrs = Attrs::new().family(Family::Monospace);
+        let attrs = AttrsOwned::new(&Attrs::new().family(Family::Monospace));
 
         Self {
             font_system,
@@ -41,21 +43,23 @@ impl<'a> WkText<'a> {
 
     pub(crate) fn set_text(&mut self, text: &str) {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
-        buffer.set_text(text, &self.attrs, Shaping::Advanced, None);
+        let attrs = self.attrs.as_attrs();
+        buffer.set_text(text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(false);
     }
 }
 
-impl<'a> WkText<'a> {
+impl WkText {
     pub(crate) fn max_width(&mut self, text: Vec<&str>) -> u32 {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
+        let attrs = self.attrs.as_attrs();
         let mut max_w: f32 = 0.0;
         {
             buffer.set_size(Some(f32::MAX), Some(self.metrics.line_height));
             buffer.set_wrap(Wrap::None);
 
             for t in text {
-                buffer.set_text(t, &self.attrs, Shaping::Advanced, None);
+                buffer.set_text(t, &attrs, Shaping::Advanced, None);
                 buffer.shape_until_scroll(false);
                 max_w = buffer
                     .layout_runs()
@@ -68,10 +72,11 @@ impl<'a> WkText<'a> {
 
     pub(crate) fn lines_h(&mut self, text: &str, width: u32) -> u32 {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
+        let attrs = self.attrs.as_attrs();
 
         buffer.set_size(Some(width as f32), Some(f32::MAX));
         buffer.set_wrap(Wrap::Word);
-        buffer.set_text(text, &self.attrs, Shaping::Advanced, None);
+        buffer.set_text(text, &attrs, Shaping::Advanced, None);
 
         buffer
             .layout_runs()

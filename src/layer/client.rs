@@ -20,11 +20,12 @@ pub mod shm;
 
 use crate::{
     config::Config,
-    keybind::page::{Page, PageDirection},
+    keybind::page::PageDirection,
     layer::{render::WkRender, text::WkText, unit::Size},
 };
 
 pub struct WkLayer {
+    // wayland client
     pub registry_state: RegistryState,
     pub output_state: OutputState,
     pub seat_state: SeatState,
@@ -32,12 +33,14 @@ pub struct WkLayer {
     pub pool: SlotPool,
     pub buffer: Option<SlotBuffer>,
     pub layer: LayerSurface,
+    pub keyboard: Option<wl_keyboard::WlKeyboard>,
+
+    // state
     pub exit: bool,
     pub first_configure: bool,
-    pub shift: Option<u32>,
-    pub keyboard: Option<wl_keyboard::WlKeyboard>,
     pub keyboard_focus: bool,
     pub config: Config,
+    // pub wk_text: WkText,
 }
 
 impl WkLayer {

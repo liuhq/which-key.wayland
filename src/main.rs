@@ -55,7 +55,6 @@ fn main() {
                     layer,
                     exit: false,
                     first_configure: true,
-                    shift: None,
                     keyboard: None,
                     keyboard_focus: false,
                     config,
