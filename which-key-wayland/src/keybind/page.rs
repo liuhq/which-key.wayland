@@ -2,6 +2,7 @@ use std::ops::Bound;
 
 use crate::keybind::{Bind, KeyBindMap};
 
+#[derive(Debug)]
 pub struct Page<'a> {
     pub items: Vec<(&'a String, &'a Bind)>,
     pub next_cursor: Option<&'a str>,

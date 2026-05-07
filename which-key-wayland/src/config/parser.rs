@@ -3,12 +3,8 @@ use std::rc::Rc;
 use kdl::{KdlDocument, KdlValue};
 use smithay_client_toolkit::shell::wlr_layer::Anchor;
 
-use crate::{
-    config::{
-        Config, ConfigColor, ConfigFont, ConfigLayout, ConfigSeparator, Margin, bind::bind_parser,
-    },
-    layer::color::WkColor,
-};
+use super::define::{Config, ConfigColor, ConfigFont, ConfigLayout, ConfigSeparator, Margin};
+use crate::{config::bind::bind_parser, layer::color::WkColor};
 
 fn get_children<'a>(config: &'a KdlDocument, key: &str) -> anyhow::Result<&'a KdlDocument> {
     config

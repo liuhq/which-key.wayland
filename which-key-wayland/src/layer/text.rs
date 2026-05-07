@@ -4,7 +4,7 @@ use cosmic_text::{
 
 use crate::layer::unit::{Offset, Size};
 
-pub(crate) struct WkText {
+pub struct WkText {
     pub(crate) font_system: FontSystem,
     pub(crate) swash_cache: SwashCache,
     pub(crate) buffer: Buffer,
@@ -13,7 +13,7 @@ pub(crate) struct WkText {
 }
 
 impl WkText {
-    pub(crate) fn new(font_size: f32, line_height: f32) -> Self {
+    pub fn new(font_size: f32, line_height: f32) -> Self {
         let mut font_system = FontSystem::new();
         let swash_cache = SwashCache::new();
         let metrics = Metrics::new(font_size, line_height);
@@ -70,7 +70,7 @@ impl WkText {
         max_w.ceil() as u32
     }
 
-    pub(crate) fn lines_h(&mut self, text: &str, width: u32) -> u32 {
+    pub fn lines_h(&mut self, text: &str, width: u32) -> u32 {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let attrs = self.attrs.as_attrs();
 

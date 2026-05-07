@@ -11,39 +11,29 @@ use crate::{
     },
 };
 
-pub(crate) struct WkRender<'a> {
-    pub(crate) text: WkText,
-    config: &'a Config,
-    entries: Page<'a>,
-}
+pub(crate) struct WkRender;
 
-impl<'a> WkRender<'a> {
-    pub(crate) fn new(config: &'a Config, entries: Page<'a>, text: WkText) -> Self {
-        Self {
-            text,
-            config,
-            entries,
-        }
-    }
-}
-
-impl<'a> WkRender<'a> {
-    pub(crate) fn draw(&mut self, size: Size<u32>, canvas: &mut [u8]) {
+impl WkRender {
+    pub(crate) fn draw(
+        config: &Config,
+        wk_text: &mut WkText,
+        size: Size<u32>,
+        canvas: &mut [u8],
+        entries: &Page,
+    ) {
         let mut pixmap = PixmapMut::from_bytes(canvas, size.width(), size.height())
             .expect("Can't create PixmapMut");
-        pixmap.fill(self.config.color.bg.into());
+        pixmap.fill(config.color.bg.into());
         let pixmap_data = pixmap.data_mut();
 
         let stride = size.width() as usize * BYTES_PER_PIXEL;
         let max_height = pixmap_data.len() / stride;
-        let usable_w = self.config.without_padding(size.width());
-        let mut current_y = self.config.layout.padding;
+        let usable_w = config.without_padding(size.width());
+        let mut current_y = config.layout.padding;
 
-        let key_w = self
-            .text
-            .max_width(self.entries.items.iter().map(|(k, _)| k.as_str()).collect());
-        let sep_w = self.text.max_width(
-            self.entries
+        let key_w = wk_text.max_width(entries.items.iter().map(|(k, _)| k.as_str()).collect());
+        let sep_w = wk_text.max_width(
+            entries
                 .items
                 .iter()
                 .map(|(_, b)| b.separator.as_ref())
@@ -51,56 +41,56 @@ impl<'a> WkRender<'a> {
         );
         let des_w = usable_w - key_w - sep_w;
 
-        let fg: cosmic_text::Color = self.config.color.fg.into();
+        let fg: cosmic_text::Color = config.color.fg.into();
 
-        for entry in &self.entries.items {
+        for entry in &entries.items {
             let usable_h =
-                (size.height() - current_y - self.config.layout.padding).min(max_height as u32);
+                (size.height() - current_y - config.layout.padding).min(max_height as u32);
             let (key, bind) = entry;
 
-            self.text.set_size(Size::new(key_w, size.height()).into());
-            self.text.set_wrap(Wrap::None);
-            self.text.set_text(key);
+            wk_text.set_size(Size::new(key_w, size.height()).into());
+            wk_text.set_wrap(Wrap::None);
+            wk_text.set_text(key);
             Self::inner_draw(
-                &mut self.text,
+                wk_text,
                 pixmap_data,
-                Offset::new(self.config.layout.padding, current_y),
+                Offset::new(config.layout.padding, current_y),
                 Size::new(key_w, usable_h),
                 stride,
                 fg,
             );
 
-            self.text.set_size(Size::new(sep_w, size.height()).into());
-            self.text.set_wrap(Wrap::None);
-            self.text.set_text(&bind.separator);
+            wk_text.set_size(Size::new(sep_w, size.height()).into());
+            wk_text.set_wrap(Wrap::None);
+            wk_text.set_text(&bind.separator);
             Self::inner_draw(
-                &mut self.text,
+                wk_text,
                 pixmap_data,
-                Offset::new(self.config.layout.padding + key_w, current_y),
+                Offset::new(config.layout.padding + key_w, current_y),
                 Size::new(sep_w, usable_h),
                 stride,
                 fg,
             );
 
-            self.text.set_size(Size::new(des_w, size.height()).into());
-            self.text.set_wrap(Wrap::Word);
-            self.text.set_text(&bind.desc);
+            wk_text.set_size(Size::new(des_w, size.height()).into());
+            wk_text.set_wrap(Wrap::Word);
+            wk_text.set_text(&bind.desc);
             Self::inner_draw(
-                &mut self.text,
+                wk_text,
                 pixmap_data,
-                Offset::new(self.config.layout.padding + key_w + sep_w, current_y),
+                Offset::new(config.layout.padding + key_w + sep_w, current_y),
                 Size::new(des_w, usable_h),
                 stride,
                 fg,
             );
 
-            let lines_offset = self.text.lines_h(&bind.desc, des_w);
+            let lines_offset = wk_text.lines_h(&bind.desc, des_w);
 
             current_y += lines_offset;
         }
     }
 
-    pub(crate) fn inner_draw(
+    fn inner_draw(
         text: &mut WkText,
         pixmap_data: &mut [u8],
         offset: Offset<u32>,

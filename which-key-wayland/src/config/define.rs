@@ -1,6 +1,3 @@
-mod bind;
-pub mod parser;
-
 use std::rc::Rc;
 
 use smithay_client_toolkit::shell::wlr_layer::Anchor;

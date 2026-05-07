@@ -2,10 +2,8 @@ use std::collections::BTreeMap;
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
 
-use crate::{
-    config::ConfigSeparator,
-    keybind::{Bind, BindKind, KeyBindMap, actions::Action},
-};
+use super::define::ConfigSeparator;
+use crate::keybind::{Bind, BindKind, KeyBindMap, actions::Action};
 
 pub fn bind_parser(
     config: &KdlDocument,
