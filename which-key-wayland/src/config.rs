@@ -5,5 +5,5 @@ pub mod parser;
 pub use define::Config;
 
 pub trait ConfigFromKdl: Sized {
-    fn from_kdl(doc: &kdl::KdlDocument) -> Self;
+    fn from_kdl(doc: &kdl::KdlDocument) -> anyhow::Result<Self>;
 }

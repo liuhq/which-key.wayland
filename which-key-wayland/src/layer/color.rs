@@ -1,6 +1,6 @@
 pub(crate) const OPAQUE_ALPHA: u8 = u8::MAX;
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub struct WkColor {
     r: u8,
     g: u8,

@@ -12,7 +12,7 @@ pub struct Bind {
     pub desc: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct KeyBindMap {
     map: BTreeMap<String, Bind>,
 }

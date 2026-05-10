@@ -1,141 +1,59 @@
-use std::rc::Rc;
-
-use kdl::{KdlDocument, KdlValue};
-use smithay_client_toolkit::shell::wlr_layer::Anchor;
-
-use super::define::{Config, ConfigColor, ConfigFont, ConfigLayout, ConfigSeparator, Margin};
-use crate::{config::bind::bind_parser, layer::color::WkColor};
-
-fn get_children<'a>(config: &'a KdlDocument, key: &str) -> anyhow::Result<&'a KdlDocument> {
-    config
-        .get(key)
-        .and_then(|n| n.children())
-        .ok_or_else(|| anyhow::anyhow!("{key}: not found"))
-}
-
-fn get_integer(config: &KdlDocument, key: &str, field: &str) -> anyhow::Result<i128> {
-    match config.get_arg(key) {
-        Some(KdlValue::Integer(val)) => Ok(*val),
-        _ => anyhow::bail!("{field}: not found or not an integer"),
-    }
-}
-
-fn get_float(config: &KdlDocument, key: &str, field: &str) -> anyhow::Result<f64> {
-    match config.get_arg(key) {
-        Some(KdlValue::Float(val)) => Ok(*val),
-        _ => anyhow::bail!("{field}: not found or not a float"),
-    }
-}
-
-fn get_string<'a>(config: &'a KdlDocument, key: &str, field: &str) -> anyhow::Result<&'a str> {
-    match config.get_arg(key) {
-        Some(KdlValue::String(val)) => Ok(val.as_str()),
-        _ => anyhow::bail!("{field}: not found or not a string"),
-    }
-}
-
-fn get_u32(config: &KdlDocument, key: &str, field: &str) -> anyhow::Result<u32> {
-    get_integer(config, key, field)?
-        .try_into()
-        .map_err(|e| anyhow::anyhow!("{field} integer overflow: {e}"))
-}
-
-fn get_i32(config: &KdlDocument, key: &str, field: &str) -> anyhow::Result<i32> {
-    get_integer(config, key, field)?
-        .try_into()
-        .map_err(|e| anyhow::anyhow!("{field} integer overflow: {e}"))
-}
+use super::{ConfigFromKdl, define::Config};
+use crate::config::bind::bind_parser;
 
 pub fn config_parse(raw: &str) -> anyhow::Result<Config> {
-    let config: KdlDocument = raw.parse()?;
-
-    let timeout = get_u32(&config, "timeout", "timeout")?;
-    let font = parse_font(&config)?;
-    let color = parse_color(&config)?;
-    let layout = parse_layout(&config)?;
-    let separator = parse_separator(&config)?;
-    let bind = bind_parser(&config, &separator)?;
-
-    Ok(Config {
-        timeout,
-        bind,
-        font,
-        color,
-        layout,
-        separator,
-    })
+    let doc: kdl::KdlDocument = raw.parse()?;
+    let mut config = Config::from_kdl(&doc)?;
+    config.bind = bind_parser(&doc, &config.separator)?;
+    Ok(config)
 }
 
-fn parse_font(config: &KdlDocument) -> anyhow::Result<ConfigFont> {
-    let font = get_children(config, "font")?;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::layer::color::WkColor;
+    use smithay_client_toolkit::shell::wlr_layer::Anchor;
 
-    let size = get_float(font, "size", "font.size")? as f32;
-    let line_height = get_float(font, "line-height", "font.line-height")? as f32;
+    #[test]
+    fn parse_default_config() {
+        let config = config_parse("").expect("should parse empty config");
 
-    Ok(ConfigFont { size, line_height })
-}
-
-fn parse_color(config: &KdlDocument) -> anyhow::Result<ConfigColor> {
-    let color = get_children(config, "color")?;
-
-    let fg = get_string(color, "fg", "color.fg")?;
-    let bg = get_string(color, "bg", "color.bg")?;
-
-    Ok(ConfigColor {
-        fg: WkColor::from_hex(fg).ok_or_else(|| anyhow::anyhow!("color.fg: invalid hex color"))?,
-        bg: WkColor::from_hex(bg).ok_or_else(|| anyhow::anyhow!("color.bg: invalid hex color"))?,
-    })
-}
-
-fn parse_anchor(val: i128) -> Anchor {
-    match val {
-        1 => Anchor::union(Anchor::TOP, Anchor::RIGHT),
-        2 => Anchor::union(Anchor::BOTTOM, Anchor::RIGHT),
-        3 => Anchor::union(Anchor::BOTTOM, Anchor::LEFT),
-        4 => Anchor::union(Anchor::TOP, Anchor::LEFT),
-        _ => Anchor::union(Anchor::BOTTOM, Anchor::RIGHT), // Default
+        assert_eq!(config.timeout, 2000);
+        assert!((config.font.size - 16.0).abs() < f32::EPSILON);
+        assert!((config.font.line_height - 20.0).abs() < f32::EPSILON);
+        assert_eq!(config.color.fg, WkColor::rgba(255, 255, 255, 255),);
+        assert_eq!(config.color.bg, WkColor::rgba(0, 0, 0, 255),);
+        assert_eq!(config.layout.width, 400);
+        assert_eq!(config.layout.max_items, 10);
+        assert_eq!(config.layout.padding, 4);
+        assert_eq!(
+            config.layout.anchor,
+            Anchor::union(Anchor::BOTTOM, Anchor::RIGHT),
+        );
+        assert_eq!(config.layout.margin.top, 0);
+        assert_eq!(config.layout.margin.right, 0);
+        assert_eq!(config.layout.margin.bottom, 0);
+        assert_eq!(config.layout.margin.left, 0);
+        assert_eq!(config.separator.action.as_ref(), " -> ");
+        assert_eq!(config.separator.group.as_ref(), " ++ ");
     }
-}
 
-fn parse_margin(layout: &KdlDocument) -> anyhow::Result<Margin> {
-    let margin = get_children(layout, "margin")?;
+    #[test]
+    fn parse_example_config() {
+        let raw = include_str!("../../../examples/config.kdl");
+        let config = config_parse(raw).expect("should parse example config");
 
-    let top = get_i32(margin, "top", "layout.margin.top")?;
-    let right = get_i32(margin, "right", "layout.margin.right")?;
-    let bottom = get_i32(margin, "bottom", "layout.margin.bottom")?;
-    let left = get_i32(margin, "left", "layout.margin.left")?;
-
-    Ok(Margin {
-        top,
-        right,
-        bottom,
-        left,
-    })
-}
-
-fn parse_layout(config: &KdlDocument) -> anyhow::Result<ConfigLayout> {
-    let layout = get_children(config, "layout")?;
-
-    let width = get_u32(layout, "width", "layout.width")?;
-    let max_items = get_u32(layout, "max-items", "layout.max-items")?;
-    let padding = get_u32(layout, "padding", "layout.padding")?;
-    let anchor = parse_anchor(get_integer(layout, "anchor", "layout.anchor")?);
-    let margin = parse_margin(layout)?;
-
-    Ok(ConfigLayout {
-        width,
-        max_items,
-        padding,
-        anchor,
-        margin,
-    })
-}
-
-fn parse_separator(config: &KdlDocument) -> anyhow::Result<ConfigSeparator> {
-    let sep = get_children(config, "separator")?;
-
-    let action = Rc::from(get_string(sep, "action", "separator.action")?);
-    let group = Rc::from(get_string(sep, "group", "separator.group")?);
-
-    Ok(ConfigSeparator { action, group })
+        assert_eq!(config.timeout, 1000);
+        assert!((config.font.size - 16.0).abs() < f32::EPSILON);
+        assert!((config.font.line_height - 20.0).abs() < f32::EPSILON);
+        assert_eq!(config.layout.width, 400);
+        assert_eq!(config.layout.max_items, 10);
+        assert_eq!(config.layout.padding, 8);
+        assert_eq!(config.layout.margin.top, 0);
+        assert_eq!(config.layout.margin.right, 4);
+        assert_eq!(config.layout.margin.bottom, 4);
+        assert_eq!(config.layout.margin.left, 0);
+        assert_eq!(config.separator.action.as_ref(), " -> ");
+        assert_eq!(config.separator.group.as_ref(), " ++ ");
+    }
 }

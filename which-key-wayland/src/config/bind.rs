@@ -14,7 +14,7 @@ pub fn bind_parser(
         .and_then(|n| n.children())
         .map(|d| d.nodes())
     else {
-        anyhow::bail!("bind: not found or empty")
+        return Ok(KeyBindMap::default());
     };
 
     let map = parse_binds_(binds, separator)?;
