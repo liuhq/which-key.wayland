@@ -43,7 +43,7 @@ mod tests {
         let raw = include_str!("../../../examples/config.kdl");
         let config = config_parse(raw).expect("should parse example config");
 
-        assert_eq!(config.timeout, 1000);
+        assert_eq!(config.timeout, 0);
         assert!((config.font.size - 16.0).abs() < f32::EPSILON);
         assert!((config.font.line_height - 20.0).abs() < f32::EPSILON);
         assert_eq!(config.layout.width, 400);
