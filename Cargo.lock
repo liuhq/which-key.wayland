@@ -1083,9 +1083,11 @@ dependencies = [
  "env_logger",
  "kdl",
  "log",
+ "rustix",
  "smithay-client-toolkit",
  "tiny-skia",
  "which-key-wayland-macros",
+ "xkbcommon",
 ]
 
 [[package]]
