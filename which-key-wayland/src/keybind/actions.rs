@@ -1,4 +1,5 @@
 use std::process;
+use std::process::Stdio;
 
 use kdl::KdlNode;
 
@@ -62,6 +63,9 @@ impl Spawn {
     pub fn run(&self) -> anyhow::Result<()> {
         process::Command::new(&self.program)
             .args(&self.args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()?;
         Ok(())
     }
@@ -82,6 +86,9 @@ impl Sh {
         process::Command::new(&self.shell)
             .arg("-c")
             .arg(&self.command)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()?;
         Ok(())
     }
