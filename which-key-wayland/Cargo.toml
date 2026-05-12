@@ -6,11 +6,13 @@ edition = "2024"
 [dependencies]
 which-key-wayland-macros = { path = "../which-key-wayland-macros" }
 anyhow = "1"
+clap = { version = "4", features = ["derive"] }
 cosmic-text = "0.18.2"
 env_logger = "0.11.10"
 kdl = "6.5.0"
 log = "0.4.29"
-rustix = { version = "1", features = ["event"] }
+rustix = { version = "1", features = ["event", "fs"] }
 smithay-client-toolkit = "0.20.0"
 xkbcommon = "0.8"
 tiny-skia = "0.12.0"
+zbus = { version = "5", features = ["blocking"] }

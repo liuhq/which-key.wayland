@@ -20,8 +20,9 @@ impl SeatHandler for WhichKey {
         seat: wl_seat::WlSeat,
         capability: Capability,
     ) {
+        self.wl_seat = Some(seat.clone());
         if capability == Capability::Keyboard && self.keyboard.is_none() {
-            println!("Set keyboard capability");
+            log::info!("Set keyboard capability");
             let keyboard = self
                 .seat_state
                 .get_keyboard(qh, &seat, None)
@@ -38,7 +39,7 @@ impl SeatHandler for WhichKey {
         capability: Capability,
     ) {
         if capability == Capability::Keyboard && self.keyboard.is_some() {
-            println!("Unset keyboard capability");
+            log::info!("Unset keyboard capability");
             self.keyboard.take().unwrap().release();
         }
     }

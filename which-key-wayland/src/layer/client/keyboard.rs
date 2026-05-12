@@ -53,8 +53,10 @@ impl KeyboardHandler for WhichKey {
         _: &[u32],
         keysyms: &[Keysym],
     ) {
-        if self.layer.wl_surface() == surface {
-            println!("Keyboard focus on window with pressed syms: {keysyms:?}");
+        if let Some(ref layer) = self.layer
+            && layer.wl_surface() == surface
+        {
+            log::debug!("Keyboard focus on surface with pressed syms: {keysyms:?}");
             self.keyboard_focus = true;
         }
     }
@@ -67,11 +69,13 @@ impl KeyboardHandler for WhichKey {
         surface: &wl_surface::WlSurface,
         _: u32,
     ) {
-        if self.layer.wl_surface() == surface {
-            println!("Release keyboard focus on window");
+        if let Some(ref layer) = self.layer
+            && layer.wl_surface() == surface
+        {
+            log::debug!("Release keyboard focus on surface");
             self.keyboard_focus = false;
 
-            self.exit = true
+            self.hide_overlay()
         }
     }
 
@@ -83,7 +87,7 @@ impl KeyboardHandler for WhichKey {
         _: u32,
         event: KeyEvent,
     ) {
-        println!("Key press: {event:?}");
+        log::debug!("Key press: {event:?}");
 
         self.last_key_time = Some(Instant::now());
 
@@ -93,7 +97,7 @@ impl KeyboardHandler for WhichKey {
                 self.prev_cursor = None;
                 self.draw(None, PageDirection::Forward);
             } else {
-                self.exit = true;
+                self.hide_overlay();
             }
             return;
         }
@@ -133,10 +137,10 @@ impl KeyboardHandler for WhichKey {
             Some(Some(actions)) => {
                 for action in &actions {
                     if let Err(e) = action.run() {
-                        eprintln!("Action error: {e}");
+                        log::error!("Action error: {e}");
                     }
                 }
-                self.exit = true;
+                self.hide_overlay();
             }
             Some(None) => {
                 self.key_path.push(keysym_str);
@@ -156,7 +160,7 @@ impl KeyboardHandler for WhichKey {
         _serial: u32,
         event: KeyEvent,
     ) {
-        println!("Key repeat: {event:?}");
+        log::trace!("Key repeat: {event:?}");
     }
 
     fn release_key(
@@ -167,7 +171,7 @@ impl KeyboardHandler for WhichKey {
         _: u32,
         event: KeyEvent,
     ) {
-        println!("Key release: {event:?}");
+        log::trace!("Key release: {event:?}");
     }
 
     fn update_modifiers(

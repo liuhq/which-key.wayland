@@ -10,7 +10,7 @@ use crate::{keybind::page::PageDirection, layer::client::WhichKey};
 
 impl LayerShellHandler for WhichKey {
     fn closed(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, _layer: &LayerSurface) {
-        self.exit = true;
+        self.hide_overlay();
     }
 
     fn configure(
@@ -21,7 +21,6 @@ impl LayerShellHandler for WhichKey {
         _configure: LayerSurfaceConfigure,
         _serial: u32,
     ) {
-        // Initiate the first draw.
         if self.first_configure {
             self.first_configure = false;
             self.draw(None, PageDirection::Forward);

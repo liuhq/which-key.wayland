@@ -1,13 +1,15 @@
+use std::os::fd::{AsFd, OwnedFd};
 use std::rc::Rc;
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use smithay_client_toolkit::{
     compositor::CompositorState,
     output::OutputState,
     reexports::client::{
-        Connection, EventQueue,
+        Connection, EventQueue, QueueHandle,
         globals::registry_queue_init,
-        protocol::{wl_keyboard, wl_shm},
+        protocol::{wl_keyboard, wl_seat, wl_shm},
     },
     registry::RegistryState,
     seat::{SeatState, keyboard::Modifiers},
@@ -31,23 +33,32 @@ pub(crate) mod shm;
 
 use crate::{
     config::Config,
+    ipc,
     keybind::{BindKind, KeyBindMap, page::PageDirection},
     layer::{render::WkRender, text::WkText, unit::Size},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AppState {
+    Showing,
+    Hidden,
+    Exiting,
+}
+
 pub struct WhichKey {
-    // wayland client
     pub registry_state: RegistryState,
     pub output_state: OutputState,
     pub seat_state: SeatState,
+    pub compositor: CompositorState,
+    pub layer_shell: LayerShell,
     pub shm: Shm,
     pub pool: SlotPool,
     pub buffer: Option<SlotBuffer>,
-    pub layer: LayerSurface,
+    pub layer: Option<LayerSurface>,
     pub keyboard: Option<wl_keyboard::WlKeyboard>,
+    pub wl_seat: Option<wl_seat::WlSeat>,
 
-    // state
-    pub exit: bool,
+    pub state: AppState,
     pub first_configure: bool,
     pub keyboard_focus: bool,
     pub config: Rc<Config>,
@@ -57,10 +68,17 @@ pub struct WhichKey {
     pub modifiers: Modifiers,
     pub key_path: Vec<String>,
     pub last_key_time: Option<Instant>,
+
+    pub dbus_rx: mpsc::Receiver<ipc::DBusCommand>,
+    pub wake_fd: OwnedFd,
 }
 
 impl WhichKey {
-    pub fn new(config: Config) -> (Self, EventQueue<Self>) {
+    pub fn new(
+        config: Config,
+        dbus_rx: mpsc::Receiver<ipc::DBusCommand>,
+        wake_fd: OwnedFd,
+    ) -> (Self, EventQueue<Self>) {
         let mut wk_text = WkText::new(config.font.size, config.font.line_height);
         let init_height =
             WhichKey::calc_h(&config, &mut wk_text, None, PageDirection::Forward, &[]);
@@ -101,13 +119,16 @@ impl WhichKey {
                 registry_state: RegistryState::new(&globals),
                 output_state: OutputState::new(&globals, &qh),
                 seat_state: SeatState::new(&globals, &qh),
+                compositor,
+                layer_shell,
                 shm,
                 pool,
                 buffer: None,
-                layer,
+                layer: Some(layer),
                 keyboard: None,
+                wl_seat: None,
 
-                exit: false,
+                state: AppState::Showing,
                 first_configure: true,
                 keyboard_focus: false,
                 config: Rc::new(config),
@@ -117,6 +138,9 @@ impl WhichKey {
                 modifiers: Modifiers::default(),
                 key_path: Vec::new(),
                 last_key_time: None,
+
+                dbus_rx,
+                wake_fd,
             },
             event_queue,
         )
@@ -124,46 +148,140 @@ impl WhichKey {
 }
 
 impl WhichKey {
+    pub fn hide_overlay(&mut self) {
+        log::info!("Hiding overlay");
+        self.key_path.clear();
+        self.next_cursor = None;
+        self.prev_cursor = None;
+        self.last_key_time = None;
+        self.buffer = None;
+        self.layer = None;
+        if let Some(kbd) = self.keyboard.take() {
+            kbd.release();
+        }
+        self.keyboard_focus = false;
+        self.state = AppState::Hidden;
+    }
+
+    pub fn show_overlay(&mut self, qh: &QueueHandle<Self>) {
+        if self.layer.is_some() {
+            self.hide_overlay();
+        }
+
+        let height = Self::calc_h(
+            &self.config,
+            &mut self.wk_text,
+            None,
+            PageDirection::Forward,
+            &self.key_path,
+        );
+
+        let surface = self.compositor.create_surface(qh);
+        let layer = self.layer_shell.create_layer_surface(
+            qh,
+            surface,
+            Layer::Overlay,
+            Some("simple_layer"),
+            None,
+        );
+
+        layer.set_anchor(self.config.layout.anchor);
+        layer.set_margin(
+            self.config.layout.margin.top,
+            self.config.layout.margin.right,
+            self.config.layout.margin.bottom,
+            self.config.layout.margin.left,
+        );
+        layer.set_keyboard_interactivity(KeyboardInteractivity::OnDemand);
+        layer.set_size(self.config.layout.width, height);
+        layer.commit();
+
+        self.layer = Some(layer);
+        self.first_configure = true;
+        self.state = AppState::Showing;
+
+        if self.keyboard.is_none()
+            && let Some(ref seat) = self.wl_seat
+        {
+            match self.seat_state.get_keyboard(qh, seat, None) {
+                Ok(kbd) => self.keyboard = Some(kbd),
+                Err(e) => log::error!("Failed to create keyboard: {e}"),
+            }
+        }
+
+        log::info!("Showing overlay");
+    }
+
     pub fn run(&mut self, event_queue: &mut EventQueue<Self>) {
         let timeout = Duration::from_millis(self.config.timeout as u64);
 
         loop {
             event_queue.dispatch_pending(self).unwrap();
-            if self.exit {
-                log::info!("Exiting wk_layer");
-                break;
+
+            while let Ok(cmd) = self.dbus_rx.try_recv() {
+                match cmd {
+                    ipc::DBusCommand::Show => {
+                        if matches!(self.state, AppState::Hidden) {
+                            self.show_overlay(&event_queue.handle());
+                        } else {
+                            self.hide_overlay();
+                            self.show_overlay(&event_queue.handle());
+                        }
+                    }
+                    ipc::DBusCommand::Quit => {
+                        self.state = AppState::Exiting;
+                    }
+                }
             }
 
-            if timeout > Duration::ZERO
-                && let Some(last) = self.last_key_time
-                && last.elapsed() >= timeout
-            {
-                self.exit = true;
-                break;
+            match self.state {
+                AppState::Exiting => {
+                    log::info!("Exiting wk_layer");
+                    break;
+                }
+                AppState::Showing => {
+                    if timeout > Duration::ZERO
+                        && let Some(last) = self.last_key_time
+                        && last.elapsed() >= timeout
+                    {
+                        self.hide_overlay();
+                    }
+                }
+                AppState::Hidden => {}
             }
 
-            let poll_dur = match self.last_key_time {
-                Some(last) if timeout > Duration::ZERO => timeout.checked_sub(last.elapsed()),
+            let poll_dur = match (self.state, self.last_key_time) {
+                (AppState::Showing, Some(last)) if timeout > Duration::ZERO => {
+                    timeout.checked_sub(last.elapsed())
+                }
                 _ => None,
             };
 
             event_queue.flush().unwrap();
             if let Some(guard) = event_queue.prepare_read() {
-                let fd = guard.connection_fd();
-                let mut fds = [rustix::event::PollFd::new(
-                    &fd,
-                    rustix::event::PollFlags::IN | rustix::event::PollFlags::ERR,
-                )];
-                if let Some(dur) = poll_dur {
-                    if let Ok(ts) = rustix::event::Timespec::try_from(dur) {
-                        let _ = rustix::event::poll(&mut fds, Some(&ts));
-                    } else {
-                        let _ = rustix::event::poll(&mut fds, None);
-                    }
-                } else {
-                    let _ = rustix::event::poll(&mut fds, None);
+                let wayland_fd = guard.connection_fd();
+                let wake_borrowed = self.wake_fd.as_fd();
+
+                let dbus_woken;
+                {
+                    let mut fds = [
+                        rustix::event::PollFd::new(
+                            &wayland_fd,
+                            rustix::event::PollFlags::IN | rustix::event::PollFlags::ERR,
+                        ),
+                        rustix::event::PollFd::new(&wake_borrowed, rustix::event::PollFlags::IN),
+                    ];
+                    let ts = poll_dur.and_then(|d| rustix::event::Timespec::try_from(d).ok());
+                    let _ = rustix::event::poll(&mut fds, ts.as_ref());
+                    dbus_woken = fds[1].revents().contains(rustix::event::PollFlags::IN);
                 }
+
                 let _ = guard.read();
+
+                if dbus_woken {
+                    let mut buf = [0u8; 8];
+                    let _ = rustix::io::read(&self.wake_fd, &mut buf);
+                }
             }
         }
     }
@@ -183,6 +301,10 @@ impl WhichKey {
     }
 
     pub fn draw(&mut self, cursor: Option<&str>, direction: PageDirection) {
+        let Some(ref layer) = self.layer else {
+            return;
+        };
+
         let width = self.config.layout.width;
         let height = Self::calc_h(
             &self.config,
@@ -221,7 +343,7 @@ impl WhichKey {
             )
             .expect("Failed to create buffer");
 
-        self.layer.set_size(width, height);
+        layer.set_size(width, height);
 
         WkRender::draw(
             &self.config,
@@ -234,17 +356,13 @@ impl WhichKey {
         self.next_cursor = next_cursor;
         self.prev_cursor = prev_cursor;
 
-        // Damage the entire window
-        self.layer
+        layer
             .wl_surface()
             .damage_buffer(0, 0, width as i32, height as i32);
 
-        // Attach and commit to present.
-        self.layer
-            .wl_surface()
-            .attach(Some(buffer.wl_buffer()), 0, 0);
+        layer.wl_surface().attach(Some(buffer.wl_buffer()), 0, 0);
 
-        self.layer.commit();
+        layer.commit();
 
         self.buffer = Some(buffer);
     }
