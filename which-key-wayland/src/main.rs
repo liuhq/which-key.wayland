@@ -1,4 +1,4 @@
-use which_key_wayland::{config::parser::config_parse, layer::client::WkLayer};
+use which_key_wayland::{WhichKey, config_parse};
 
 fn main() {
     env_logger::init();
@@ -18,6 +18,6 @@ fn main() {
         }
     };
 
-    let (mut wk_layer, mut event_queue) = WkLayer::new(config);
+    let (mut wk_layer, mut event_queue) = WhichKey::new(config);
     wk_layer.run(&mut event_queue);
 }

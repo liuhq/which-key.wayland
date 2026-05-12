@@ -1,3 +1,6 @@
-pub mod config;
-pub mod keybind;
-pub mod layer;
+mod config;
+mod keybind;
+mod layer;
+
+pub use config::parser::config_parse;
+pub use layer::client::WhichKey;
