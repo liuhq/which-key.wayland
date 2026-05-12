@@ -6,13 +6,13 @@ use smithay_client_toolkit::{
     seat::SeatState,
 };
 
-use crate::layer::client::WkLayer;
+use crate::layer::client::WhichKey;
 
-impl ProvidesRegistryState for WkLayer {
+impl ProvidesRegistryState for WhichKey {
     fn registry(&mut self) -> &mut RegistryState {
         &mut self.registry_state
     }
     registry_handlers![OutputState, SeatState];
 }
 
-delegate_registry!(WkLayer);
+delegate_registry!(WhichKey);

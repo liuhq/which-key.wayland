@@ -3,12 +3,12 @@ use smithay_client_toolkit::{
     shm::{Shm, ShmHandler},
 };
 
-use crate::layer::client::WkLayer;
+use crate::layer::client::WhichKey;
 
-impl ShmHandler for WkLayer {
+impl ShmHandler for WhichKey {
     fn shm_state(&mut self) -> &mut Shm {
         &mut self.shm
     }
 }
 
-delegate_shm!(WkLayer);
+delegate_shm!(WhichKey);

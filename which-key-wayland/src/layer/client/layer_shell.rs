@@ -4,9 +4,9 @@ use smithay_client_toolkit::{
     shell::wlr_layer::{LayerShellHandler, LayerSurface, LayerSurfaceConfigure},
 };
 
-use crate::layer::client::WkLayer;
+use crate::{keybind::page::PageDirection, layer::client::WhichKey};
 
-impl LayerShellHandler for WkLayer {
+impl LayerShellHandler for WhichKey {
     fn closed(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, _layer: &LayerSurface) {
         self.exit = true;
     }
@@ -22,9 +22,9 @@ impl LayerShellHandler for WkLayer {
         // Initiate the first draw.
         if self.first_configure {
             self.first_configure = false;
-            self.draw();
+            self.draw(None, PageDirection::Forward);
         }
     }
 }
 
-delegate_layer!(WkLayer);
+delegate_layer!(WhichKey);

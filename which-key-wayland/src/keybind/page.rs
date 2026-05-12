@@ -9,6 +9,7 @@ pub struct Page<'a> {
     pub prev_cursor: Option<&'a str>,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum PageDirection {
     Forward,
     Backward,

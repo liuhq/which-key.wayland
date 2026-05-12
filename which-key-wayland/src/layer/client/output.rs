@@ -4,9 +4,9 @@ use smithay_client_toolkit::{
     reexports::client::{Connection, QueueHandle, protocol::wl_output},
 };
 
-use crate::layer::client::WkLayer;
+use crate::layer::client::WhichKey;
 
-impl OutputHandler for WkLayer {
+impl OutputHandler for WhichKey {
     fn output_state(&mut self) -> &mut OutputState {
         &mut self.output_state
     }
@@ -36,4 +36,4 @@ impl OutputHandler for WkLayer {
     }
 }
 
-delegate_output!(WkLayer);
+delegate_output!(WhichKey);

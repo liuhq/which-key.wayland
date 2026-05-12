@@ -8,9 +8,9 @@ use smithay_client_toolkit::{
     shell::WaylandSurface,
 };
 
-use crate::layer::client::WkLayer;
+use crate::{keybind::page::PageDirection, layer::client::WhichKey};
 
-impl KeyboardHandler for WkLayer {
+impl KeyboardHandler for WhichKey {
     fn enter(
         &mut self,
         _: &Connection,
@@ -58,10 +58,21 @@ impl KeyboardHandler for WkLayer {
             self.exit = true;
         }
 
-        // if event.keysym == Keysym::space {
-        //     self.config.keybinds.pop();
-        //     self.draw();
-        // }
+        if self.modifiers.ctrl {
+            match event.keysym {
+                Keysym::d => {
+                    if let Some(nc) = self.next_cursor.take() {
+                        self.draw(Some(&nc), PageDirection::Forward);
+                    }
+                }
+                Keysym::u => {
+                    if let Some(pc) = self.prev_cursor.take() {
+                        self.draw(Some(&pc), PageDirection::Backward);
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     fn repeat_key(
@@ -96,8 +107,8 @@ impl KeyboardHandler for WkLayer {
         _raw_modifiers: RawModifiers,
         _layout: u32,
     ) {
-        println!("Update modifiers: {modifiers:?}");
+        self.modifiers = modifiers;
     }
 }
 
-delegate_keyboard!(WkLayer);
+delegate_keyboard!(WhichKey);

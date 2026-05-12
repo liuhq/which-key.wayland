@@ -7,9 +7,9 @@ use smithay_client_toolkit::{
     },
 };
 
-use crate::layer::client::WkLayer;
+use crate::layer::client::WhichKey;
 
-impl CompositorHandler for WkLayer {
+impl CompositorHandler for WhichKey {
     fn scale_factor_changed(
         &mut self,
         _conn: &Connection,
@@ -56,4 +56,4 @@ impl CompositorHandler for WkLayer {
     }
 }
 
-delegate_compositor!(WkLayer);
+delegate_compositor!(WhichKey);

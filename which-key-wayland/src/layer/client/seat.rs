@@ -4,9 +4,9 @@ use smithay_client_toolkit::{
     seat::{Capability, SeatHandler, SeatState},
 };
 
-use crate::layer::client::WkLayer;
+use crate::layer::client::WhichKey;
 
-impl SeatHandler for WkLayer {
+impl SeatHandler for WhichKey {
     fn seat_state(&mut self) -> &mut SeatState {
         &mut self.seat_state
     }
@@ -46,4 +46,4 @@ impl SeatHandler for WkLayer {
     fn remove_seat(&mut self, _: &Connection, _: &QueueHandle<Self>, _: wl_seat::WlSeat) {}
 }
 
-delegate_seat!(WkLayer);
+delegate_seat!(WhichKey);
