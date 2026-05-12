@@ -4,7 +4,7 @@ use kdl::KdlNode;
 
 const ACTION_NAMES: &[&str] = &["spawn", "sh"];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Action {
     Spawn(Spawn),
     Sh(Sh),
@@ -13,6 +13,13 @@ pub enum Action {
 impl Action {
     pub fn is_action(node: &KdlNode) -> bool {
         ACTION_NAMES.contains(&node.name().value())
+    }
+
+    pub fn run(&self) -> anyhow::Result<()> {
+        match self {
+            Action::Spawn(s) => s.run(),
+            Action::Sh(s) => s.run(),
+        }
     }
 
     pub fn parse(node: &KdlNode) -> anyhow::Result<Self> {
@@ -41,7 +48,7 @@ impl Action {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Spawn {
     program: String,
     args: Vec<String>,
@@ -53,20 +60,14 @@ impl Spawn {
     }
 
     pub fn run(&self) -> anyhow::Result<()> {
-        let mut child = process::Command::new(&self.program)
+        process::Command::new(&self.program)
             .args(&self.args)
             .spawn()?;
-
-        println!("PID: {}", child.id());
-
-        let status = child.wait()?;
-        println!("Status: {status}");
-
         Ok(())
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Sh {
     shell: String,
     command: String,
@@ -78,16 +79,10 @@ impl Sh {
     }
 
     pub fn run(&self) -> anyhow::Result<()> {
-        let mut child = process::Command::new(&self.shell)
+        process::Command::new(&self.shell)
             .arg("-c")
             .arg(&self.command)
             .spawn()?;
-
-        println!("PID: {}", child.id());
-
-        let status = child.wait()?;
-        println!("Status: {status}");
-
         Ok(())
     }
 }

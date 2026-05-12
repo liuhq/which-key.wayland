@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use kdl::{KdlDocument, KdlNode, KdlValue};
 
 use super::define::ConfigSeparator;
-use crate::keybind::{Bind, BindKind, KeyBindMap, actions::Action};
+use crate::keybind::{Bind, BindKind, KeyBindMap, actions::Action, normalize_key_string};
 
 pub fn bind_parser(
     config: &KdlDocument,
@@ -54,7 +54,7 @@ fn parse_binds_<'a, I: IntoIterator<Item = &'a KdlNode>>(
         };
 
         map.insert(
-            node.name().value().to_string(),
+            normalize_key_string(node.name().value()),
             Bind {
                 bind,
                 separator,

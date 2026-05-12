@@ -30,7 +30,7 @@ pub(crate) mod shm;
 
 use crate::{
     config::Config,
-    keybind::page::PageDirection,
+    keybind::{BindKind, KeyBindMap, page::PageDirection},
     layer::{render::WkRender, text::WkText, unit::Size},
 };
 
@@ -54,12 +54,14 @@ pub struct WhichKey {
     pub next_cursor: Option<String>,
     pub prev_cursor: Option<String>,
     pub modifiers: Modifiers,
+    pub key_path: Vec<String>,
 }
 
 impl WhichKey {
     pub fn new(config: Config) -> (Self, EventQueue<Self>) {
         let mut wk_text = WkText::new(config.font.size, config.font.line_height);
-        let init_height = WhichKey::calc_h(&config, &mut wk_text, None, PageDirection::Forward);
+        let init_height =
+            WhichKey::calc_h(&config, &mut wk_text, None, PageDirection::Forward, &[]);
 
         let conn = Connection::connect_to_env().expect("Failed to connect to Wayland");
         let (globals, event_queue) = registry_queue_init(&conn).expect("Failed to init registry");
@@ -111,6 +113,7 @@ impl WhichKey {
                 next_cursor: None,
                 prev_cursor: None,
                 modifiers: Modifiers::default(),
+                key_path: Vec::new(),
             },
             event_queue,
         )
@@ -128,9 +131,48 @@ impl WhichKey {
         }
     }
 
+    pub fn current_bind_map(&self) -> &KeyBindMap {
+        let mut map = &self.config.bind;
+        for key in &self.key_path {
+            if let Some(bind) = map.map.get(key.as_str())
+                && let BindKind::Group(group) = &bind.bind
+            {
+                map = group;
+                continue;
+            }
+            break;
+        }
+        map
+    }
+
     pub fn draw(&mut self, cursor: Option<&str>, direction: PageDirection) {
         let width = self.config.layout.width;
-        let height = Self::calc_h(&self.config, &mut self.wk_text, cursor, direction);
+        let height = Self::calc_h(
+            &self.config,
+            &mut self.wk_text,
+            cursor,
+            direction,
+            &self.key_path,
+        );
+
+        let config = Rc::clone(&self.config);
+        let key_path = self.key_path.clone();
+        let max_items = self.config.layout.max_items as usize;
+        let page = {
+            let mut map = &config.bind;
+            for key in &key_path {
+                if let Some(bind) = map.map.get(key.as_str())
+                    && let BindKind::Group(group) = &bind.bind
+                {
+                    map = group;
+                    continue;
+                }
+                break;
+            }
+            map.page(cursor, direction, max_items)
+        };
+        let next_cursor = page.next_cursor.map(|s| s.to_string());
+        let prev_cursor = page.prev_cursor.map(|s| s.to_string());
 
         let (buffer, canvas) = self
             .pool
@@ -144,23 +186,14 @@ impl WhichKey {
 
         self.layer.set_size(width, height);
 
-        let (next_cursor, prev_cursor) = {
-            let entries =
-                self.config
-                    .bind
-                    .page(cursor, direction, self.config.layout.max_items as usize);
-            WkRender::draw(
-                &self.config,
-                &mut self.wk_text,
-                Size::new(width, height),
-                canvas,
-                &entries,
-            );
-            (
-                entries.next_cursor.map(|s| s.to_string()),
-                entries.prev_cursor.map(|s| s.to_string()),
-            )
-        };
+        WkRender::draw(
+            &self.config,
+            &mut self.wk_text,
+            Size::new(width, height),
+            canvas,
+            &page,
+        );
+
         self.next_cursor = next_cursor;
         self.prev_cursor = prev_cursor;
 
@@ -181,13 +214,25 @@ impl WhichKey {
 }
 
 impl WhichKey {
-    pub fn calc_h(config: &Config, wk_text: &mut WkText, cursor: Option<&str>, direction: PageDirection) -> u32 {
+    pub fn calc_h(
+        config: &Config,
+        wk_text: &mut WkText,
+        cursor: Option<&str>,
+        direction: PageDirection,
+        key_path: &[String],
+    ) -> u32 {
+        let mut map = &config.bind;
+        for key in key_path {
+            if let Some(bind) = map.map.get(key.as_str())
+                && let BindKind::Group(group) = &bind.bind
+            {
+                map = group;
+                continue;
+            }
+            break;
+        }
         let mut total_lines = config.with_padding(0);
-        let entries = config.bind.page(
-            cursor,
-            direction,
-            config.layout.max_items as usize,
-        );
+        let entries = map.page(cursor, direction, config.layout.max_items as usize);
         let key_w = wk_text.max_width(entries.items.iter().map(|(k, _)| k.as_str()).collect());
         let sep_w = wk_text.max_width(
             entries

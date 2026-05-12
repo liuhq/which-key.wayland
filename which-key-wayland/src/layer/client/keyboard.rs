@@ -8,7 +8,37 @@ use smithay_client_toolkit::{
     shell::WaylandSurface,
 };
 
-use crate::{keybind::page::PageDirection, layer::client::WhichKey};
+use crate::{
+    keybind::{BindKind, page::PageDirection},
+    layer::client::WhichKey,
+};
+
+fn keysym_to_key_string(keysym: Keysym, modifiers: &Modifiers) -> Option<String> {
+    let name = xkbcommon::xkb::keysym_get_name(keysym);
+
+    if name.len() == 1 && name.as_bytes()[0].is_ascii_alphabetic() {
+        let base = name.to_ascii_uppercase();
+
+        let mut parts = Vec::new();
+        if modifiers.ctrl {
+            parts.push("Ctrl");
+        }
+        if modifiers.alt {
+            parts.push("Alt");
+        }
+        if modifiers.logo {
+            parts.push("Super");
+        }
+        if modifiers.shift {
+            parts.push("Shift");
+        }
+        parts.sort();
+        parts.push(&base);
+        Some(parts.join("+"))
+    } else {
+        None
+    }
+}
 
 impl KeyboardHandler for WhichKey {
     fn enter(
@@ -39,7 +69,6 @@ impl KeyboardHandler for WhichKey {
             println!("Release keyboard focus on window");
             self.keyboard_focus = false;
 
-            // TODO: hide it
             self.exit = true
         }
     }
@@ -55,7 +84,14 @@ impl KeyboardHandler for WhichKey {
         println!("Key press: {event:?}");
 
         if event.keysym == Keysym::Escape {
-            self.exit = true;
+            if self.key_path.pop().is_some() {
+                self.next_cursor = None;
+                self.prev_cursor = None;
+                self.draw(None, PageDirection::Forward);
+            } else {
+                self.exit = true;
+            }
+            return;
         }
 
         if self.modifiers.ctrl {
@@ -64,14 +100,47 @@ impl KeyboardHandler for WhichKey {
                     if let Some(nc) = self.next_cursor.take() {
                         self.draw(Some(&nc), PageDirection::Forward);
                     }
+                    return;
                 }
                 Keysym::u => {
                     if let Some(pc) = self.prev_cursor.take() {
                         self.draw(Some(&pc), PageDirection::Backward);
                     }
+                    return;
                 }
                 _ => {}
             }
+        }
+
+        let Some(key_str) = keysym_to_key_string(event.keysym, &self.modifiers) else {
+            return;
+        };
+
+        let keysym_str = key_str;
+        let action = {
+            let map = self.current_bind_map();
+            map.map.get(&keysym_str).map(|b| match &b.bind {
+                BindKind::Action(actions) => Some(actions.clone()),
+                BindKind::Group(_) => None,
+            })
+        };
+
+        match action {
+            Some(Some(actions)) => {
+                for action in &actions {
+                    if let Err(e) = action.run() {
+                        eprintln!("Action error: {e}");
+                    }
+                }
+                self.exit = true;
+            }
+            Some(None) => {
+                self.key_path.push(keysym_str);
+                self.next_cursor = None;
+                self.prev_cursor = None;
+                self.draw(None, PageDirection::Forward);
+            }
+            None => {}
         }
     }
 
