@@ -4,6 +4,8 @@ use smithay_client_toolkit::{
     shell::wlr_layer::{LayerShellHandler, LayerSurface, LayerSurfaceConfigure},
 };
 
+use std::time::Instant;
+
 use crate::{keybind::page::PageDirection, layer::client::WhichKey};
 
 impl LayerShellHandler for WhichKey {
@@ -23,6 +25,7 @@ impl LayerShellHandler for WhichKey {
         if self.first_configure {
             self.first_configure = false;
             self.draw(None, PageDirection::Forward);
+            self.last_key_time = Some(Instant::now());
         }
     }
 }

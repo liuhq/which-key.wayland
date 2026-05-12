@@ -8,6 +8,8 @@ use smithay_client_toolkit::{
     shell::WaylandSurface,
 };
 
+use std::time::Instant;
+
 use crate::{
     keybind::{BindKind, page::PageDirection},
     layer::client::WhichKey,
@@ -82,6 +84,8 @@ impl KeyboardHandler for WhichKey {
         event: KeyEvent,
     ) {
         println!("Key press: {event:?}");
+
+        self.last_key_time = Some(Instant::now());
 
         if event.keysym == Keysym::Escape {
             if self.key_path.pop().is_some() {

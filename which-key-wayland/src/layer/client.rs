@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 use smithay_client_toolkit::{
     compositor::CompositorState,
@@ -55,6 +56,7 @@ pub struct WhichKey {
     pub prev_cursor: Option<String>,
     pub modifiers: Modifiers,
     pub key_path: Vec<String>,
+    pub last_key_time: Option<Instant>,
 }
 
 impl WhichKey {
@@ -114,6 +116,7 @@ impl WhichKey {
                 prev_cursor: None,
                 modifiers: Modifiers::default(),
                 key_path: Vec::new(),
+                last_key_time: None,
             },
             event_queue,
         )
@@ -122,11 +125,45 @@ impl WhichKey {
 
 impl WhichKey {
     pub fn run(&mut self, event_queue: &mut EventQueue<Self>) {
+        let timeout = Duration::from_millis(self.config.timeout as u64);
+
         loop {
-            event_queue.blocking_dispatch(self).unwrap();
+            event_queue.dispatch_pending(self).unwrap();
             if self.exit {
                 log::info!("Exiting wk_layer");
                 break;
+            }
+
+            if timeout > Duration::ZERO
+                && let Some(last) = self.last_key_time
+                && last.elapsed() >= timeout
+            {
+                self.exit = true;
+                break;
+            }
+
+            let poll_dur = match self.last_key_time {
+                Some(last) if timeout > Duration::ZERO => timeout.checked_sub(last.elapsed()),
+                _ => None,
+            };
+
+            event_queue.flush().unwrap();
+            if let Some(guard) = event_queue.prepare_read() {
+                let fd = guard.connection_fd();
+                let mut fds = [rustix::event::PollFd::new(
+                    &fd,
+                    rustix::event::PollFlags::IN | rustix::event::PollFlags::ERR,
+                )];
+                if let Some(dur) = poll_dur {
+                    if let Ok(ts) = rustix::event::Timespec::try_from(dur) {
+                        let _ = rustix::event::poll(&mut fds, Some(&ts));
+                    } else {
+                        let _ = rustix::event::poll(&mut fds, None);
+                    }
+                } else {
+                    let _ = rustix::event::poll(&mut fds, None);
+                }
+                let _ = guard.read();
             }
         }
     }
