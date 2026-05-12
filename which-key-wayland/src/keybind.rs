@@ -1,5 +1,5 @@
-pub mod actions;
-pub mod page;
+pub(crate) mod actions;
+pub(crate) mod page;
 
 use std::{collections::BTreeMap, rc::Rc};
 

@@ -9,7 +9,7 @@ use smithay_client_toolkit::{
         protocol::{wl_keyboard, wl_shm},
     },
     registry::RegistryState,
-    seat::SeatState,
+    seat::{SeatState, keyboard::Modifiers},
     shell::{
         WaylandSurface,
         wlr_layer::{KeyboardInteractivity, Layer, LayerShell, LayerSurface},
@@ -20,13 +20,13 @@ use smithay_client_toolkit::{
     },
 };
 
-pub mod compositor;
-pub mod keyboard;
-pub mod layer_shell;
-pub mod output;
-pub mod registry;
-pub mod seat;
-pub mod shm;
+pub(crate) mod compositor;
+pub(crate) mod keyboard;
+pub(crate) mod layer_shell;
+pub(crate) mod output;
+pub(crate) mod registry;
+pub(crate) mod seat;
+pub(crate) mod shm;
 
 use crate::{
     config::Config,
@@ -34,7 +34,7 @@ use crate::{
     layer::{render::WkRender, text::WkText, unit::Size},
 };
 
-pub struct WkLayer {
+pub struct WhichKey {
     // wayland client
     pub registry_state: RegistryState,
     pub output_state: OutputState,
@@ -51,12 +51,15 @@ pub struct WkLayer {
     pub keyboard_focus: bool,
     pub config: Rc<Config>,
     pub wk_text: WkText,
+    pub next_cursor: Option<String>,
+    pub prev_cursor: Option<String>,
+    pub modifiers: Modifiers,
 }
 
-impl WkLayer {
+impl WhichKey {
     pub fn new(config: Config) -> (Self, EventQueue<Self>) {
         let mut wk_text = WkText::new(config.font.size, config.font.line_height);
-        let init_height = WkLayer::final_height(&config, &mut wk_text);
+        let init_height = WhichKey::calc_h(&config, &mut wk_text, None, PageDirection::Forward);
 
         let conn = Connection::connect_to_env().expect("Failed to connect to Wayland");
         let (globals, event_queue) = registry_queue_init(&conn).expect("Failed to init registry");
@@ -105,13 +108,16 @@ impl WkLayer {
                 keyboard_focus: false,
                 config: Rc::new(config),
                 wk_text,
+                next_cursor: None,
+                prev_cursor: None,
+                modifiers: Modifiers::default(),
             },
             event_queue,
         )
     }
 }
 
-impl WkLayer {
+impl WhichKey {
     pub fn run(&mut self, event_queue: &mut EventQueue<Self>) {
         loop {
             event_queue.blocking_dispatch(self).unwrap();
@@ -122,9 +128,9 @@ impl WkLayer {
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, cursor: Option<&str>, direction: PageDirection) {
         let width = self.config.layout.width;
-        let height = Self::final_height(&self.config, &mut self.wk_text);
+        let height = Self::calc_h(&self.config, &mut self.wk_text, cursor, direction);
 
         let (buffer, canvas) = self
             .pool
@@ -138,13 +144,11 @@ impl WkLayer {
 
         self.layer.set_size(width, height);
 
-        // Draw to the window:
-        {
-            let entries = self.config.bind.page(
-                None,
-                PageDirection::Forward,
-                self.config.layout.max_items as usize,
-            );
+        let (next_cursor, prev_cursor) = {
+            let entries =
+                self.config
+                    .bind
+                    .page(cursor, direction, self.config.layout.max_items as usize);
             WkRender::draw(
                 &self.config,
                 &mut self.wk_text,
@@ -152,7 +156,13 @@ impl WkLayer {
                 canvas,
                 &entries,
             );
-        }
+            (
+                entries.next_cursor.map(|s| s.to_string()),
+                entries.prev_cursor.map(|s| s.to_string()),
+            )
+        };
+        self.next_cursor = next_cursor;
+        self.prev_cursor = prev_cursor;
 
         // Damage the entire window
         self.layer
@@ -170,12 +180,12 @@ impl WkLayer {
     }
 }
 
-impl WkLayer {
-    pub fn final_height(config: &Config, wk_text: &mut WkText) -> u32 {
+impl WhichKey {
+    pub fn calc_h(config: &Config, wk_text: &mut WkText, cursor: Option<&str>, direction: PageDirection) -> u32 {
         let mut total_lines = config.with_padding(0);
         let entries = config.bind.page(
-            None,
-            PageDirection::Forward,
+            cursor,
+            direction,
             config.layout.max_items as usize,
         );
         let key_w = wk_text.max_width(entries.items.iter().map(|(k, _)| k.as_str()).collect());

@@ -1,9 +1,9 @@
 mod bind;
 mod define;
-pub mod parser;
+pub(crate) mod parser;
 
-pub use define::Config;
+pub(crate) use define::Config;
 
-pub trait ConfigFromKdl: Sized {
+pub(crate) trait ConfigFromKdl: Sized {
     fn from_kdl(doc: &kdl::KdlDocument) -> anyhow::Result<Self>;
 }
