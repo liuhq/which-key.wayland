@@ -1,4 +1,4 @@
-timeout 1000 // ms
+timeout 0 // ms, or `0` to disable `timeout`
 
 font {
   size 16.0
@@ -29,9 +29,9 @@ separator {
 }
 
 bind {
-  B desc="Open browser" { spawn "$BROWSER" "https://www.google.com"; }
+  B desc="Open browser" { spawn "google-chrome" "https://www.google.com"; }
   A desc="Apps" {
-    T desc="Terminal" { spawn "$TERMINAL" "-c" "sh"; }
+    T desc="Terminal" { spawn "foot" "-c" "sh"; }
     C desc="Calculator" { spawn "gnome-calculator"; }
     N desc="Niri messages" {
       L desc="Layers" { sh "niri msg layers"; }
