@@ -21,7 +21,12 @@ mod tests {
         assert_eq!(config.timeout, 2000);
         assert!((config.font.size - 16.0).abs() < f32::EPSILON);
         assert!((config.font.line_height - 20.0).abs() < f32::EPSILON);
-        assert_eq!(config.color.fg, WkColor::rgba(255, 255, 255, 255),);
+        assert_eq!(config.color.fg_key, WkColor::rgba(255, 255, 255, 255),);
+        assert_eq!(config.color.fg_separator, WkColor::rgba(255, 255, 255, 255),);
+        assert_eq!(
+            config.color.fg_description,
+            WkColor::rgba(255, 255, 255, 255),
+        );
         assert_eq!(config.color.bg, WkColor::rgba(0, 0, 0, 255),);
         assert_eq!(config.layout.width, 400);
         assert_eq!(config.layout.max_items, 10);
@@ -46,6 +51,16 @@ mod tests {
         assert_eq!(config.timeout, 0);
         assert!((config.font.size - 16.0).abs() < f32::EPSILON);
         assert!((config.font.line_height - 20.0).abs() < f32::EPSILON);
+        assert_eq!(config.color.fg_key, WkColor::from_hex("#D8DEE9").unwrap(),);
+        assert_eq!(
+            config.color.fg_separator,
+            WkColor::from_hex("#4C566A").unwrap(),
+        );
+        assert_eq!(
+            config.color.fg_description,
+            WkColor::from_hex("#88C0D0").unwrap(),
+        );
+        assert_eq!(config.color.bg, WkColor::from_hex("#2E3440").unwrap(),);
         assert_eq!(config.layout.width, 400);
         assert_eq!(config.layout.max_items, 10);
         assert_eq!(config.layout.padding, 8);

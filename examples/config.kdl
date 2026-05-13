@@ -6,8 +6,10 @@ font {
 }
 
 color {
-  fg "#ffffff"
-  bg "#000000"
+  fg-key "#D8DEE9"
+  fg-separator "#4C566A"
+  fg-description "#88C0D0"
+  bg "#2E3440"
 }
 
 layout {

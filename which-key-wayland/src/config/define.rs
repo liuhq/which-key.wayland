@@ -28,7 +28,11 @@ pub struct ConfigFont {
 #[derive(Debug, KdlParse)]
 pub struct ConfigColor {
     #[node(default = WkColor::rgba(255, 255, 255, 255))]
-    pub fg: WkColor,
+    pub fg_key: WkColor,
+    #[node(default = WkColor::rgba(255, 255, 255, 255))]
+    pub fg_separator: WkColor,
+    #[node(default = WkColor::rgba(255, 255, 255, 255))]
+    pub fg_description: WkColor,
     #[node(default = WkColor::rgba(0, 0, 0, 255))]
     pub bg: WkColor,
 }
