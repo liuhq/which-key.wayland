@@ -7,7 +7,7 @@ edition = "2024"
 which-key-wayland-macros = { path = "../which-key-wayland-macros" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-cosmic-text = "0.18.2"
+cosmic-text = "0.19.0"
 env_logger = "0.11.10"
 kdl = "6.5.0"
 log = "0.4.29"

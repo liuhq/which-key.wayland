@@ -30,21 +30,29 @@ impl WkText {
     }
 
     pub(crate) fn set_size(&mut self, size: Size<f32>) {
-        self.buffer.set_size(
-            &mut self.font_system,
-            Some(size.width()),
-            Some(size.height()),
-        );
+        self.buffer
+            .set_size(Some(size.width()), Some(size.height()));
     }
 
     pub(crate) fn set_wrap(&mut self, wrap: Wrap) {
-        self.buffer.set_wrap(&mut self.font_system, wrap);
+        self.buffer.set_wrap(wrap);
     }
 
     pub(crate) fn set_text(&mut self, text: &str) {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let attrs = self.attrs.as_attrs();
         buffer.set_text(text, &attrs, Shaping::Advanced, None);
+        buffer.shape_until_scroll(false);
+    }
+
+    pub(crate) fn set_rich_text(&mut self, spans: &[(&str, cosmic_text::Color)]) {
+        let mut buffer = self.buffer.borrow_with(&mut self.font_system);
+        let base = Attrs::new().family(Family::Monospace);
+        let attrs_spans: Vec<_> = spans
+            .iter()
+            .map(|(t, c)| (*t, base.clone().color(*c)))
+            .collect();
+        buffer.set_rich_text(attrs_spans, &base, Shaping::Advanced, None);
         buffer.shape_until_scroll(false);
     }
 }
@@ -96,10 +104,12 @@ impl WkText {
             for glyph in run.glyphs.iter() {
                 let physical = glyph.physical((offset.x(), offset.y()), 1.0);
 
+                let glyph_fg = glyph.color_opt.unwrap_or(fg);
+
                 self.swash_cache.with_pixels(
                     &mut self.font_system,
                     physical.cache_key,
-                    fg,
+                    glyph_fg,
                     |x, y, color| {
                         let px = physical.x + x;
                         let py = physical.y + y + run.line_y.round() as i32;
