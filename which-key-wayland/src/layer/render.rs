@@ -41,48 +41,52 @@ impl WkRender {
         );
         let des_w = usable_w - key_w - sep_w;
 
-        let fg: cosmic_text::Color = config.color.fg.into();
-
         for entry in &entries.items {
             let usable_h =
                 (size.height() - current_y - config.layout.padding).min(max_height as u32);
             let (key, bind) = entry;
 
-            wk_text.set_size(Size::new(key_w, size.height()).into());
-            wk_text.set_wrap(Wrap::None);
-            wk_text.set_text(key);
-            Self::inner_draw(
-                wk_text,
-                pixmap_data,
-                Offset::new(config.layout.padding, current_y),
-                Size::new(key_w, usable_h),
-                stride,
-                fg,
-            );
+            {
+                wk_text.set_size(Size::new(key_w, size.height()).into());
+                wk_text.set_wrap(Wrap::None);
+                wk_text.set_text(key);
+                Self::inner_draw(
+                    wk_text,
+                    pixmap_data,
+                    Offset::new(config.layout.padding, current_y),
+                    Size::new(key_w, usable_h),
+                    stride,
+                    config.color.fg_key.into(),
+                );
+            }
 
-            wk_text.set_size(Size::new(sep_w, size.height()).into());
-            wk_text.set_wrap(Wrap::None);
-            wk_text.set_text(&bind.separator);
-            Self::inner_draw(
-                wk_text,
-                pixmap_data,
-                Offset::new(config.layout.padding + key_w, current_y),
-                Size::new(sep_w, usable_h),
-                stride,
-                fg,
-            );
+            {
+                wk_text.set_size(Size::new(sep_w, size.height()).into());
+                wk_text.set_wrap(Wrap::None);
+                wk_text.set_text(&bind.separator);
+                Self::inner_draw(
+                    wk_text,
+                    pixmap_data,
+                    Offset::new(config.layout.padding + key_w, current_y),
+                    Size::new(sep_w, usable_h),
+                    stride,
+                    config.color.fg_separator.into(),
+                );
+            }
 
-            wk_text.set_size(Size::new(des_w, size.height()).into());
-            wk_text.set_wrap(Wrap::Word);
-            wk_text.set_text(&bind.desc);
-            Self::inner_draw(
-                wk_text,
-                pixmap_data,
-                Offset::new(config.layout.padding + key_w + sep_w, current_y),
-                Size::new(des_w, usable_h),
-                stride,
-                fg,
-            );
+            {
+                wk_text.set_size(Size::new(des_w, size.height()).into());
+                wk_text.set_wrap(Wrap::Word);
+                wk_text.set_text(&bind.desc);
+                Self::inner_draw(
+                    wk_text,
+                    pixmap_data,
+                    Offset::new(config.layout.padding + key_w + sep_w, current_y),
+                    Size::new(des_w, usable_h),
+                    stride,
+                    config.color.fg_description.into(),
+                );
+            }
 
             let lines_offset = wk_text.lines_h(&bind.desc, des_w);
 
@@ -108,13 +112,13 @@ impl WkRender {
                 if bound_x.contains(&physical.x()) && bound_y.contains(&physical.y()) {
                     let idx = (physical.y() as usize * stride)
                         + (physical.x() as usize * BYTES_PER_PIXEL);
-                    // ARGB8888 → [B, G, R, A]
-                    let alpha = color.a().normalize_alpha();
 
-                    let (b, g, r, a) = (idx, idx + 1, idx + 2, idx + 3);
-                    pixmap_data[b] = color.b().blend_to(pixmap_data[b], alpha);
-                    pixmap_data[g] = color.g().blend_to(pixmap_data[g], alpha);
+                    // ABGR8888 → [R, G, B, A]
+                    let alpha = color.a().normalize_alpha();
+                    let (r, g, b, a) = (idx, idx + 1, idx + 2, idx + 3);
                     pixmap_data[r] = color.r().blend_to(pixmap_data[r], alpha);
+                    pixmap_data[g] = color.g().blend_to(pixmap_data[g], alpha);
+                    pixmap_data[b] = color.b().blend_to(pixmap_data[b], alpha);
                     pixmap_data[a] = OPAQUE_ALPHA.blend_to(pixmap_data[a], alpha);
                 }
             },

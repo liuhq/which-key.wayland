@@ -339,7 +339,7 @@ impl WhichKey {
                 width as i32,
                 height as i32,
                 width as i32 * 4,
-                wl_shm::Format::Argb8888,
+                wl_shm::Format::Abgr8888,
             )
             .expect("Failed to create buffer");
 
