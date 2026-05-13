@@ -67,8 +67,8 @@ impl From<WkColor> for tiny_skia::Color {
 
 impl From<WkColor> for cosmic_text::Color {
     fn from(val: WkColor) -> Self {
-        let WkColor { r, g, b, .. } = val;
-        cosmic_text::Color::rgb(r, g, b)
+        let WkColor { r, g, b, a } = val;
+        cosmic_text::Color::rgba(r, g, b, a)
     }
 }
 
