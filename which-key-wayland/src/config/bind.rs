@@ -2,13 +2,12 @@ use std::collections::BTreeMap;
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
 
-use super::define::ConfigSeparator;
-use crate::keybind::{Bind, BindKind, KeyBindMap, actions::Action, normalize_key_string};
+use crate::{
+    config::define::SYMBOL_GROUP,
+    keybind::{Bind, BindKind, KeyBindMap, actions::Action, normalize_key_string},
+};
 
-pub fn bind_parser(
-    config: &KdlDocument,
-    separator: &ConfigSeparator,
-) -> anyhow::Result<KeyBindMap> {
+pub fn bind_parser(config: &KdlDocument) -> anyhow::Result<KeyBindMap> {
     let Some(binds) = config
         .get("bind")
         .and_then(|n| n.children())
@@ -17,20 +16,17 @@ pub fn bind_parser(
         return Ok(KeyBindMap::default());
     };
 
-    let map = parse_binds_(binds, separator)?;
+    let map = parse_binds_(binds)?;
 
     Ok(map)
 }
 
-fn parse_binds_<'a, I: IntoIterator<Item = &'a KdlNode>>(
-    nodes: I,
-    separator: &ConfigSeparator,
-) -> anyhow::Result<KeyBindMap> {
+fn parse_binds_<'a, I: IntoIterator<Item = &'a KdlNode>>(nodes: I) -> anyhow::Result<KeyBindMap> {
     let nodes: Vec<_> = nodes.into_iter().collect();
     let mut map = BTreeMap::new();
 
     for node in nodes {
-        let desc = match node.get("desc") {
+        let mut desc = match node.get("desc") {
             Some(KdlValue::String(desc)) => desc.to_string(),
             _ => String::new(),
         };
@@ -40,26 +36,20 @@ fn parse_binds_<'a, I: IntoIterator<Item = &'a KdlNode>>(
             .iter()
             .partition::<Vec<&KdlNode>, _>(|n| Action::is_action(n));
 
-        let (bind, separator) = if groups.is_empty() {
+        let bind = if groups.is_empty() {
             let actions = actions
                 .into_iter()
                 .map(Action::parse)
                 .collect::<anyhow::Result<_>>()?;
-            (BindKind::Action(actions), separator.action.clone())
+            BindKind::Action(actions)
         } else {
-            (
-                BindKind::Group(parse_binds_(groups, separator)?),
-                separator.group.clone(),
-            )
+            desc.insert_str(0, SYMBOL_GROUP);
+            BindKind::Group(parse_binds_(groups)?)
         };
 
         map.insert(
             normalize_key_string(node.name().value()),
-            Bind {
-                bind,
-                separator,
-                desc,
-            },
+            Bind { bind, desc },
         );
     }
 

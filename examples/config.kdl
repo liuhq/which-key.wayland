@@ -13,7 +13,7 @@ color {
 }
 
 layout {
-  width 400
+  width 500
   max-items 10
   padding 8
   anchor 2 // 1:tr | 2:br | 3:bl | 4:tl
@@ -23,11 +23,6 @@ layout {
     bottom 4
     left 0
   }
-}
-
-separator {
-  action " -> "
-  group " ++ "
 }
 
 bind {

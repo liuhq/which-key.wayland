@@ -1,14 +1,13 @@
 pub(crate) mod actions;
 pub(crate) mod page;
 
-use std::{collections::BTreeMap, rc::Rc};
+use std::collections::BTreeMap;
 
 use crate::keybind::actions::Action;
 
 #[derive(Debug)]
 pub struct Bind {
     pub bind: BindKind,
-    pub separator: Rc<str>,
     pub desc: String,
 }
 

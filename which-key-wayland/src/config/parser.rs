@@ -4,7 +4,7 @@ use crate::config::bind::bind_parser;
 pub fn config_parse(raw: &str) -> anyhow::Result<Config> {
     let doc: kdl::KdlDocument = raw.parse()?;
     let mut config = Config::from_kdl(&doc)?;
-    config.bind = bind_parser(&doc, &config.separator)?;
+    config.bind = bind_parser(&doc)?;
     Ok(config)
 }
 
@@ -28,7 +28,7 @@ mod tests {
             WkColor::rgba(255, 255, 255, 255),
         );
         assert_eq!(config.color.bg, WkColor::rgba(0, 0, 0, 255),);
-        assert_eq!(config.layout.width, 400);
+        assert_eq!(config.layout.width, 500);
         assert_eq!(config.layout.max_items, 10);
         assert_eq!(config.layout.padding, 4);
         assert_eq!(
@@ -39,8 +39,6 @@ mod tests {
         assert_eq!(config.layout.margin.right, 0);
         assert_eq!(config.layout.margin.bottom, 0);
         assert_eq!(config.layout.margin.left, 0);
-        assert_eq!(config.separator.action.as_ref(), " -> ");
-        assert_eq!(config.separator.group.as_ref(), " ++ ");
     }
 
     #[test]
@@ -61,14 +59,12 @@ mod tests {
             WkColor::from_hex("#88C0D0").unwrap(),
         );
         assert_eq!(config.color.bg, WkColor::from_hex("#2E3440").unwrap(),);
-        assert_eq!(config.layout.width, 400);
+        assert_eq!(config.layout.width, 500);
         assert_eq!(config.layout.max_items, 10);
         assert_eq!(config.layout.padding, 8);
         assert_eq!(config.layout.margin.top, 0);
         assert_eq!(config.layout.margin.right, 4);
         assert_eq!(config.layout.margin.bottom, 4);
         assert_eq!(config.layout.margin.left, 0);
-        assert_eq!(config.separator.action.as_ref(), " -> ");
-        assert_eq!(config.separator.group.as_ref(), " ++ ");
     }
 }

@@ -31,6 +31,7 @@ pub(crate) mod registry;
 pub(crate) mod seat;
 pub(crate) mod shm;
 
+use crate::config::{Footer, SYMBOL_INDICATOR};
 use crate::{
     config::Config,
     ipc,
@@ -300,6 +301,23 @@ impl WhichKey {
         map
     }
 
+    fn parent_bind_map(&self) -> &KeyBindMap {
+        let mut map = &self.config.bind;
+        let len = self.key_path.len();
+        if len > 0 {
+            for key in &self.key_path[..len - 1] {
+                if let Some(bind) = map.map.get(key.as_str())
+                    && let BindKind::Group(group) = &bind.bind
+                {
+                    map = group;
+                    continue;
+                }
+                break;
+            }
+        }
+        map
+    }
+
     pub fn draw(&mut self, cursor: Option<&str>, direction: PageDirection) {
         let Some(ref layer) = self.layer else {
             return;
@@ -333,6 +351,15 @@ impl WhichKey {
         let next_cursor = page.next_cursor.map(|s| s.to_string());
         let prev_cursor = page.prev_cursor.map(|s| s.to_string());
 
+        let header = self.key_path.last().and_then(|last_key| {
+            self.parent_bind_map()
+                .map
+                .get(last_key.as_str())
+                .map(|bind| (last_key.clone(), bind.desc.clone()))
+        });
+        let header_ref: Option<(&str, &str)> =
+            header.as_ref().map(|(k, d)| (k.as_str(), d.as_str()));
+
         let (buffer, canvas) = self
             .pool
             .create_buffer(
@@ -351,6 +378,7 @@ impl WhichKey {
             Size::new(width, height),
             canvas,
             &page,
+            header_ref,
         );
 
         self.next_cursor = next_cursor;
@@ -377,30 +405,40 @@ impl WhichKey {
         key_path: &[String],
     ) -> u32 {
         let mut map = &config.bind;
+        let mut last_key_desc = None;
         for key in key_path {
             if let Some(bind) = map.map.get(key.as_str())
                 && let BindKind::Group(group) = &bind.bind
             {
                 map = group;
+                last_key_desc = Some(&bind.desc);
                 continue;
             }
             break;
         }
-        let mut total_lines = config.with_padding(0);
+
+        let line_height = config.font.line_height.ceil() as u32;
+        let usable_w = config.without_padding(config.layout.width);
+        let header = match last_key_desc {
+            Some(desc) => wk_text.lines_h(desc, usable_w),
+            None => line_height,
+        };
+        let separator = line_height;
+        let mut total_lines = config.with_padding(0) + header + separator;
+
         let entries = map.page(cursor, direction, config.layout.max_items as usize);
         let key_w = wk_text.max_width(entries.items.iter().map(|(k, _)| k.as_str()).collect());
-        let sep_w = wk_text.max_width(
-            entries
-                .items
-                .iter()
-                .map(|(_, b)| b.separator.as_ref())
-                .collect(),
-        );
-        let des_w = config.without_padding(config.layout.width - key_w - sep_w);
+        let padded_indicator = config.font.size.floor() as u32;
+        let ind_w = wk_text.max_width(vec![SYMBOL_INDICATOR]) + padded_indicator + padded_indicator;
+        let des_w = usable_w - key_w - ind_w;
         for (_, bind) in entries.items.iter() {
             let des_h = wk_text.lines_h(&bind.desc, des_w);
             total_lines += des_h;
         }
+
+        let footer = wk_text.lines_h(&Footer::default().to_string(), usable_w);
+        total_lines += separator + footer;
+
         total_lines
     }
 }

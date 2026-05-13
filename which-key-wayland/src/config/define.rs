@@ -1,9 +1,39 @@
-use std::rc::Rc;
-
 use smithay_client_toolkit::shell::wlr_layer::Anchor;
 use which_key_wayland_macros::KdlParse;
 
 use crate::{keybind::KeyBindMap, layer::color::WkColor};
+
+pub static SYMBOL_INDICATOR: &str = "\u{ffeb}";
+pub static SYMBOL_GROUP: &str = "\u{2b}";
+
+#[derive(Debug, Clone)]
+pub struct Footer {
+    pub items: Vec<(String, String)>,
+}
+
+impl Default for Footer {
+    fn default() -> Self {
+        Self {
+            items: vec![
+                ("Esc".to_string(), "Back/Quit".to_string()),
+                ("Ctrl+U".to_string(), "PageUp".to_string()),
+                ("Ctrl+D".to_string(), "PageDown".to_string()),
+            ],
+        }
+    }
+}
+
+impl std::fmt::Display for Footer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (i, (k, d)) in self.items.iter().enumerate() {
+            if i > 0 {
+                write!(f, "  ")?;
+            }
+            write!(f, "{k} {d}")?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, KdlParse)]
 pub struct Margin {
@@ -39,7 +69,7 @@ pub struct ConfigColor {
 
 #[derive(Debug, KdlParse)]
 pub struct ConfigLayout {
-    #[node(default = 400)]
+    #[node(default = 500)]
     pub width: u32,
     #[node(default = 10)]
     pub max_items: u32,
@@ -49,14 +79,6 @@ pub struct ConfigLayout {
     pub anchor: Anchor,
     #[node(default)]
     pub margin: Margin,
-}
-
-#[derive(Debug, KdlParse)]
-pub struct ConfigSeparator {
-    #[node(default = Rc::from(" -> "))]
-    pub action: Rc<str>,
-    #[node(default = Rc::from(" ++ "))]
-    pub group: Rc<str>,
 }
 
 #[derive(Debug, KdlParse)]
@@ -71,8 +93,6 @@ pub struct Config {
     pub color: ConfigColor,
     #[node(default)]
     pub layout: ConfigLayout,
-    #[node(default)]
-    pub separator: ConfigSeparator,
 }
 
 impl Config {
