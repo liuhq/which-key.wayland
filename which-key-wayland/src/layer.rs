@@ -1,5 +1,5 @@
 pub mod client;
-pub(crate) mod color;
-pub(crate) mod render;
-pub(crate) mod text;
-pub(crate) mod unit;
+pub mod color;
+pub mod render;
+pub mod text;
+pub mod unit;

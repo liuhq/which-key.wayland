@@ -96,11 +96,11 @@ pub struct Config {
 }
 
 impl Config {
-    pub(crate) fn with_padding(&self, value: u32) -> u32 {
+    pub fn with_padding(&self, value: u32) -> u32 {
         value + self.layout.padding * 2
     }
 
-    pub(crate) fn without_padding(&self, value: u32) -> u32 {
+    pub fn without_padding(&self, value: u32) -> u32 {
         value - self.layout.padding * 2
     }
 }

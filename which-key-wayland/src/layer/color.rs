@@ -1,4 +1,4 @@
-pub(crate) const OPAQUE_ALPHA: u8 = u8::MAX;
+pub const OPAQUE_ALPHA: u8 = u8::MAX;
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub struct WkColor {
@@ -46,7 +46,7 @@ impl WkColor {
     }
 }
 
-pub(crate) trait WkColorPixelOps: Copy + Into<f32> {
+pub trait WkColorPixelOps: Copy + Into<f32> {
     fn normalize_alpha(self) -> f32 {
         self.into() / 255.0
     }

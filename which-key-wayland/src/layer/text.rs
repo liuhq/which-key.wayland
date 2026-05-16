@@ -5,9 +5,9 @@ use cosmic_text::{
 use crate::layer::unit::{Offset, Size};
 
 pub struct WkText {
-    pub(crate) font_system: FontSystem,
-    pub(crate) swash_cache: SwashCache,
-    pub(crate) buffer: Buffer,
+    pub font_system: FontSystem,
+    pub swash_cache: SwashCache,
+    pub buffer: Buffer,
     metrics: Metrics,
     attrs: AttrsOwned,
 }
@@ -29,23 +29,23 @@ impl WkText {
         }
     }
 
-    pub(crate) fn set_size(&mut self, size: Size<f32>) {
+    pub fn set_size(&mut self, size: Size<f32>) {
         self.buffer
             .set_size(Some(size.width()), Some(size.height()));
     }
 
-    pub(crate) fn set_wrap(&mut self, wrap: Wrap) {
+    pub fn set_wrap(&mut self, wrap: Wrap) {
         self.buffer.set_wrap(wrap);
     }
 
-    pub(crate) fn set_text(&mut self, text: &str) {
+    pub fn set_text(&mut self, text: &str) {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let attrs = self.attrs.as_attrs();
         buffer.set_text(text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(false);
     }
 
-    pub(crate) fn set_rich_text(&mut self, spans: &[(&str, cosmic_text::Color)]) {
+    pub fn set_rich_text(&mut self, spans: &[(&str, cosmic_text::Color)]) {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let base = Attrs::new().family(Family::Monospace);
         let attrs_spans: Vec<_> = spans
@@ -58,7 +58,7 @@ impl WkText {
 }
 
 impl WkText {
-    pub(crate) fn max_width(&mut self, text: Vec<&str>) -> u32 {
+    pub fn max_width(&mut self, text: Vec<&str>) -> u32 {
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let attrs = self.attrs.as_attrs();
         let mut max_w: f32 = 0.0;
@@ -94,7 +94,7 @@ impl WkText {
             .round() as u32
     }
 
-    pub(crate) fn render_glyph<F: FnMut(Offset<i32>, cosmic_text::Color)>(
+    pub fn render_glyph<F: FnMut(Offset<i32>, cosmic_text::Color)>(
         &mut self,
         offset: Offset<f32>,
         fg: cosmic_text::Color,
