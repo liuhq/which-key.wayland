@@ -1,9 +1,10 @@
-pub(crate) mod actions;
-pub(crate) mod page;
+pub mod actions;
+pub mod key;
+pub mod page;
 
 use std::collections::BTreeMap;
 
-use crate::keybind::actions::Action;
+use crate::keybind::{actions::Action, key::Key};
 
 #[derive(Debug)]
 pub struct Bind {
@@ -13,21 +14,13 @@ pub struct Bind {
 
 #[derive(Debug, Default)]
 pub struct KeyBindMap {
-    pub(crate) map: BTreeMap<String, Bind>,
+    pub map: BTreeMap<Key, Bind>,
 }
 
 impl KeyBindMap {
-    pub fn new(map: BTreeMap<String, Bind>) -> Self {
+    pub fn new(map: BTreeMap<Key, Bind>) -> Self {
         Self { map }
     }
-}
-
-pub fn normalize_key_string(key: &str) -> String {
-    let mut parts: Vec<&str> = key.split('+').collect();
-    let base = parts.pop().unwrap_or("");
-    parts.sort();
-    parts.push(base);
-    parts.join("+")
 }
 
 #[derive(Debug)]

@@ -23,19 +23,19 @@ use smithay_client_toolkit::{
     },
 };
 
-pub(crate) mod compositor;
-pub(crate) mod keyboard;
-pub(crate) mod layer_shell;
-pub(crate) mod output;
-pub(crate) mod registry;
-pub(crate) mod seat;
-pub(crate) mod shm;
+pub mod compositor;
+pub mod keyboard;
+pub mod layer_shell;
+pub mod output;
+pub mod registry;
+pub mod seat;
+pub mod shm;
 
 use crate::config::{Footer, SYMBOL_INDICATOR};
 use crate::{
     config::Config,
     ipc,
-    keybind::{BindKind, KeyBindMap, page::PageDirection},
+    keybind::{BindKind, KeyBindMap, key::Key, page::PageDirection},
     layer::{render::WkRender, text::WkText, unit::Size},
 };
 
@@ -67,7 +67,7 @@ pub struct WhichKey {
     pub next_cursor: Option<String>,
     pub prev_cursor: Option<String>,
     pub modifiers: Modifiers,
-    pub key_path: Vec<String>,
+    pub key_path: Vec<Key>,
     pub last_key_time: Option<Instant>,
 
     pub dbus_rx: mpsc::Receiver<ipc::DBusCommand>,
@@ -290,7 +290,7 @@ impl WhichKey {
     pub fn current_bind_map(&self) -> &KeyBindMap {
         let mut map = &self.config.bind;
         for key in &self.key_path {
-            if let Some(bind) = map.map.get(key.as_str())
+            if let Some(bind) = map.map.get(key)
                 && let BindKind::Group(group) = &bind.bind
             {
                 map = group;
@@ -306,7 +306,7 @@ impl WhichKey {
         let len = self.key_path.len();
         if len > 0 {
             for key in &self.key_path[..len - 1] {
-                if let Some(bind) = map.map.get(key.as_str())
+                if let Some(bind) = map.map.get(key)
                     && let BindKind::Group(group) = &bind.bind
                 {
                     map = group;
@@ -318,7 +318,7 @@ impl WhichKey {
         map
     }
 
-    pub fn draw(&mut self, cursor: Option<&str>, direction: PageDirection) {
+    pub fn draw(&mut self, cursor: Option<&Key>, direction: PageDirection) {
         let Some(ref layer) = self.layer else {
             return;
         };
@@ -333,12 +333,11 @@ impl WhichKey {
         );
 
         let config = Rc::clone(&self.config);
-        let key_path = self.key_path.clone();
         let max_items = self.config.layout.max_items as usize;
         let page = {
             let mut map = &config.bind;
-            for key in &key_path {
-                if let Some(bind) = map.map.get(key.as_str())
+            for key in &self.key_path {
+                if let Some(bind) = map.map.get(key)
                     && let BindKind::Group(group) = &bind.bind
                 {
                     map = group;
@@ -348,14 +347,14 @@ impl WhichKey {
             }
             map.page(cursor, direction, max_items)
         };
-        let next_cursor = page.next_cursor.map(|s| s.to_string());
-        let prev_cursor = page.prev_cursor.map(|s| s.to_string());
+        let next_cursor = page.next_cursor.map(|k| k.to_string());
+        let prev_cursor = page.prev_cursor.map(|k| k.to_string());
 
         let header = self.key_path.last().and_then(|last_key| {
             self.parent_bind_map()
                 .map
-                .get(last_key.as_str())
-                .map(|bind| (last_key.clone(), bind.desc.clone()))
+                .get(last_key)
+                .map(|bind| (last_key.to_string(), bind.desc.clone()))
         });
         let header_ref: Option<(&str, &str)> =
             header.as_ref().map(|(k, d)| (k.as_str(), d.as_str()));
@@ -400,14 +399,14 @@ impl WhichKey {
     pub fn calc_h(
         config: &Config,
         wk_text: &mut WkText,
-        cursor: Option<&str>,
+        cursor: Option<&Key>,
         direction: PageDirection,
-        key_path: &[String],
+        key_path: &[Key],
     ) -> u32 {
         let mut map = &config.bind;
         let mut last_key_desc = None;
         for key in key_path {
-            if let Some(bind) = map.map.get(key.as_str())
+            if let Some(bind) = map.map.get(key)
                 && let BindKind::Group(group) = &bind.bind
             {
                 map = group;
@@ -427,7 +426,8 @@ impl WhichKey {
         let mut total_lines = config.with_padding(0) + header + separator;
 
         let entries = map.page(cursor, direction, config.layout.max_items as usize);
-        let key_w = wk_text.max_width(entries.items.iter().map(|(k, _)| k.as_str()).collect());
+        let key_strings: Vec<String> = entries.items.iter().map(|(k, _)| k.to_string()).collect();
+        let key_w = wk_text.max_width(key_strings.iter().map(|s| s.as_str()).collect());
         let padded_indicator = config.font.size.floor() as u32;
         let ind_w = wk_text.max_width(vec![SYMBOL_INDICATOR]) + padded_indicator + padded_indicator;
         let des_w = usable_w - key_w - ind_w;

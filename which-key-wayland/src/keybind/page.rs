@@ -1,12 +1,12 @@
 use std::ops::Bound;
 
-use crate::keybind::{Bind, KeyBindMap};
+use crate::keybind::{Bind, KeyBindMap, key::Key};
 
 #[derive(Debug)]
 pub struct Page<'a> {
-    pub items: Vec<(&'a String, &'a Bind)>,
-    pub next_cursor: Option<&'a str>,
-    pub prev_cursor: Option<&'a str>,
+    pub items: Vec<(&'a Key, &'a Bind)>,
+    pub next_cursor: Option<&'a Key>,
+    pub prev_cursor: Option<&'a Key>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -18,7 +18,7 @@ pub enum PageDirection {
 impl KeyBindMap {
     pub fn page(
         &self,
-        cursor: Option<&str>,
+        cursor: Option<&Key>,
         direction: PageDirection,
         page_size: usize,
     ) -> Page<'_> {
@@ -37,41 +37,41 @@ impl KeyBindMap {
         }
     }
 
-    fn collect_forward(&self, after: Option<&str>, page_size: usize) -> Vec<(&String, &Bind)> {
+    fn collect_forward(&self, after: Option<&Key>, page_size: usize) -> Vec<(&Key, &Bind)> {
         let range = match after {
             Some(key) => self
                 .map
-                .range::<str, _>((Bound::Excluded(key), Bound::Unbounded)),
-            None => self.map.range::<str, _>(..),
+                .range::<Key, _>((Bound::Excluded(key), Bound::Unbounded)),
+            None => self.map.range::<Key, _>(..),
         };
         range.take(page_size).collect()
     }
 
-    fn collect_backward(&self, before: Option<&str>, page_size: usize) -> Vec<(&String, &Bind)> {
+    fn collect_backward(&self, before: Option<&Key>, page_size: usize) -> Vec<(&Key, &Bind)> {
         let range = match before {
             Some(key) => self
                 .map
-                .range::<str, _>((Bound::Unbounded, Bound::Excluded(key))),
-            None => self.map.range::<str, _>(..),
+                .range::<Key, _>((Bound::Unbounded, Bound::Excluded(key))),
+            None => self.map.range::<Key, _>(..),
         };
         let mut items: Vec<_> = range.rev().take(page_size).collect();
         items.reverse();
         items
     }
 
-    fn probe_next<'a>(&self, last: Option<&(&'a String, &'a Bind)>) -> Option<&'a str> {
+    fn probe_next<'a>(&self, last: Option<&(&'a Key, &'a Bind)>) -> Option<&'a Key> {
         let (key, _) = last?;
         self.map
-            .range::<str, _>((Bound::Excluded(key.as_str()), Bound::Unbounded))
+            .range::<Key, _>((Bound::Excluded(*key), Bound::Unbounded))
             .next()
-            .map(|_| key.as_str())
+            .map(|_| *key)
     }
 
-    fn probe_prev<'a>(&self, first: Option<&(&'a String, &'a Bind)>) -> Option<&'a str> {
+    fn probe_prev<'a>(&self, first: Option<&(&'a Key, &'a Bind)>) -> Option<&'a Key> {
         let (key, _) = first?;
         self.map
-            .range::<str, _>((Bound::Unbounded, Bound::Excluded(key.as_str())))
+            .range::<Key, _>((Bound::Unbounded, Bound::Excluded(*key)))
             .next_back()
-            .map(|_| key.as_str())
+            .map(|_| *key)
     }
 }

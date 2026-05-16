@@ -8,10 +8,11 @@ use smithay_client_toolkit::{
     shell::WaylandSurface,
 };
 
+use std::str::FromStr;
 use std::time::Instant;
 
 use crate::{
-    keybind::{BindKind, page::PageDirection},
+    keybind::{BindKind, key::Key, page::PageDirection},
     layer::client::WhichKey,
 };
 
@@ -105,14 +106,18 @@ impl KeyboardHandler for WhichKey {
         if self.modifiers.ctrl {
             match event.keysym {
                 Keysym::d => {
-                    if let Some(nc) = self.next_cursor.take() {
-                        self.draw(Some(&nc), PageDirection::Forward);
+                    if let Some(nc) = self.next_cursor.take()
+                        && let Ok(key) = Key::from_str(&nc)
+                    {
+                        self.draw(Some(&key), PageDirection::Forward);
                     }
                     return;
                 }
                 Keysym::u => {
-                    if let Some(pc) = self.prev_cursor.take() {
-                        self.draw(Some(&pc), PageDirection::Backward);
+                    if let Some(pc) = self.prev_cursor.take()
+                        && let Ok(key) = Key::from_str(&pc)
+                    {
+                        self.draw(Some(&key), PageDirection::Backward);
                     }
                     return;
                 }
@@ -124,10 +129,13 @@ impl KeyboardHandler for WhichKey {
             return;
         };
 
-        let keysym_str = key_str;
+        let Ok(key) = Key::from_str(&key_str) else {
+            return;
+        };
+
         let action = {
             let map = self.current_bind_map();
-            map.map.get(&keysym_str).map(|b| match &b.bind {
+            map.map.get(&key).map(|b| match &b.bind {
                 BindKind::Action(actions) => Some(actions.clone()),
                 BindKind::Group(_) => None,
             })
@@ -143,7 +151,7 @@ impl KeyboardHandler for WhichKey {
                 self.hide_overlay();
             }
             Some(None) => {
-                self.key_path.push(keysym_str);
+                self.key_path.push(key);
                 self.next_cursor = None;
                 self.prev_cursor = None;
                 self.draw(None, PageDirection::Forward);

@@ -11,10 +11,10 @@ use crate::{
     },
 };
 
-pub(crate) struct WkRender;
+pub struct WkRender;
 
 impl WkRender {
-    pub(crate) fn draw(
+    pub fn draw(
         config: &Config,
         wk_text: &mut WkText,
         size: Size<u32>,
@@ -31,7 +31,8 @@ impl WkRender {
         let usable_w = config.without_padding(size.width());
         let mut current_y = config.layout.padding;
 
-        let key_w = wk_text.max_width(entries.items.iter().map(|(k, _)| k.as_str()).collect());
+        let key_strings: Vec<String> = entries.items.iter().map(|(k, _)| k.to_string()).collect();
+        let key_w = wk_text.max_width(key_strings.iter().map(|s| s.as_str()).collect());
         let padded_indicator = config.font.size.floor() as u32;
         let ind_w = wk_text.max_width(vec![SYMBOL_INDICATOR]) + padded_indicator + padded_indicator;
         let des_w = usable_w - key_w - ind_w;
@@ -88,7 +89,7 @@ impl WkRender {
                 {
                     wk_text.set_size(Size::new(key_w, size.height()).into());
                     wk_text.set_wrap(Wrap::None);
-                    wk_text.set_text(key);
+                    wk_text.set_text(&key.to_string());
                     Self::inner_draw(
                         wk_text,
                         pixmap_data,

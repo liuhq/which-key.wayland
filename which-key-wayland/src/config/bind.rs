@@ -1,10 +1,10 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, str::FromStr};
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
 
 use crate::{
     config::define::SYMBOL_GROUP,
-    keybind::{Bind, BindKind, KeyBindMap, actions::Action, normalize_key_string},
+    keybind::{Bind, BindKind, KeyBindMap, actions::Action, key::Key},
 };
 
 pub fn bind_parser(config: &KdlDocument) -> anyhow::Result<KeyBindMap> {
@@ -47,10 +47,7 @@ fn parse_binds_<'a, I: IntoIterator<Item = &'a KdlNode>>(nodes: I) -> anyhow::Re
             BindKind::Group(parse_binds_(groups)?)
         };
 
-        map.insert(
-            normalize_key_string(node.name().value()),
-            Bind { bind, desc },
-        );
+        map.insert(Key::from_str(node.name().value())?, Bind { bind, desc });
     }
 
     Ok(KeyBindMap::new(map))
