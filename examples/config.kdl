@@ -28,15 +28,12 @@ layout {
 bind {
   B desc="Open browser" { spawn "google-chrome" "https://www.google.com"; }
   A desc="Apps" {
-    T desc="Terminal" { spawn "foot" "-c" "sh"; }
+    T desc="Terminal" { spawn "foot" "sh"; }
     C desc="Calculator" { spawn "gnome-calculator"; }
-    N desc="Niri messages" {
-      L desc="Layers" { sh "niri msg layers"; }
-      O desc="Layers" { sh "niri msg outputs"; }
+    N desc="Niri" {
+      L desc="Layers" { sh "foot --hold niri msg layers"; }
+      O desc="Outputs" { spawn "foot" "--hold" "niri" "msg" "outputs"; }
     }
-  }
-  C desc="Test c" {
-    C desc="Test cc" { sh "echo cc"; }
   }
   D desc="The description's text is wrapped when the line is too long to fit" { sh "echo d"; }
   E desc="Test e" { sh "echo e"; }
@@ -54,6 +51,6 @@ bind {
   Q desc="Test q" { sh "echo q"; }
   R desc="Test r" { sh "echo r"; }
   S desc="Test s" { sh "echo s"; }
-  // Ctrl+P desc="The description's text is wrapped when the line is too long to fit" { sh "niri msg windows"; }
-  // Ctrl+Shift+P desc="File Manager" { spawn "nautilus"; }
+  Ctrl+W desc="The description's text is wrapped when the line is too long to fit" { sh "foot --hold niri msg windows"; }
+  Ctrl+Shift+F desc="File Manager" { spawn "nautilus"; }
 }
