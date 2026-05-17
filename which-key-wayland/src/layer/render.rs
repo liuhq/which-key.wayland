@@ -1,5 +1,5 @@
 use cosmic_text::Wrap;
-use tiny_skia::{BYTES_PER_PIXEL, PixmapMut};
+use tiny_skia::{BYTES_PER_PIXEL, FillRule, Paint, PathBuilder, PixmapMut, Transform};
 
 use crate::{
     config::{Config, Footer, SYMBOL_INDICATOR},
@@ -14,6 +14,31 @@ use crate::{
 pub struct WkRender;
 
 impl WkRender {
+    const CORNER_KAPPA: f32 = 0.5522847498;
+
+    fn rounded_rect_path(width: u32, height: u32, radius: u32) -> Option<tiny_skia::Path> {
+        if radius == 0 || width == 0 || height == 0 {
+            return None;
+        }
+        let r = (radius as f32).min(width as f32 / 2.0).min(height as f32 / 2.0);
+        let w = width as f32;
+        let h = height as f32;
+
+        let mut pb = PathBuilder::new();
+        pb.move_to(r, 0.0);
+        pb.line_to(w - r, 0.0);
+        pb.cubic_to(w - r + Self::CORNER_KAPPA * r, 0.0, w, r - Self::CORNER_KAPPA * r, w, r);
+        pb.line_to(w, h - r);
+        pb.cubic_to(w, h - r + Self::CORNER_KAPPA * r, w - r + Self::CORNER_KAPPA * r, h, w - r, h);
+        pb.line_to(r, h);
+        pb.cubic_to(r - Self::CORNER_KAPPA * r, h, 0.0, h - r + Self::CORNER_KAPPA * r, 0.0, h - r);
+        pb.line_to(0.0, r);
+        pb.cubic_to(0.0, r - Self::CORNER_KAPPA * r, r - Self::CORNER_KAPPA * r, 0.0, r, 0.0);
+        pb.close();
+
+        pb.finish()
+    }
+
     pub fn draw(
         config: &Config,
         wk_text: &mut WkText,
@@ -24,7 +49,16 @@ impl WkRender {
     ) {
         let mut pixmap = PixmapMut::from_bytes(canvas, size.width(), size.height())
             .expect("Can't create PixmapMut");
-        pixmap.fill(config.color.bg.into());
+        if let Some(path) =
+            Self::rounded_rect_path(size.width(), size.height(), config.layout.radius)
+        {
+            let mut paint = Paint::default();
+            paint.set_color(config.color.bg.into());
+            paint.anti_alias = true;
+            pixmap.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+        } else {
+            pixmap.fill(config.color.bg.into());
+        }
         let pixmap_data = pixmap.data_mut();
 
         let stride = size.width() as usize * BYTES_PER_PIXEL;
