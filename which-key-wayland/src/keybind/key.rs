@@ -264,4 +264,56 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn modifier_as_str() {
+        assert_eq!(Modifier::Super.as_str(), "Super");
+        assert_eq!(Modifier::Shift.as_str(), "Shift");
+        assert_eq!(Modifier::Ctrl.as_str(), "Ctrl");
+        assert_eq!(Modifier::Alt.as_str(), "Alt");
+    }
+
+    #[test]
+    fn display_no_modifiers() {
+        let key = Key::new(None, "A".to_string());
+        assert_eq!(key.to_string(), "A");
+    }
+
+    #[test]
+    fn display_single_modifier() {
+        let key = Key::new(Some(vec![Modifier::Ctrl]), "C".to_string());
+        assert_eq!(key.to_string(), "Ctrl+C");
+    }
+
+    #[test]
+    fn display_multiple_modifiers_sorted() {
+        let key = Key::new(
+            Some(vec![Modifier::Shift, Modifier::Ctrl]),
+            "X".to_string(),
+        );
+        assert_eq!(key.to_string(), "Shift+Ctrl+X");
+    }
+
+    #[test]
+    fn display_all_modifiers_sorted() {
+        let key = Key::new(
+            Some(vec![
+                Modifier::Shift,
+                Modifier::Alt,
+                Modifier::Super,
+                Modifier::Ctrl,
+            ]),
+            "Q".to_string(),
+        );
+        assert_eq!(key.to_string(), "Super+Shift+Ctrl+Alt+Q");
+    }
+
+    #[test]
+    fn key_new_deduplicates_and_sorts() {
+        let key = Key::new(
+            Some(vec![Modifier::Ctrl, Modifier::Ctrl, Modifier::Shift]),
+            "A".to_string(),
+        );
+        assert_eq!(key.modifiers, Some(vec![Modifier::Shift, Modifier::Ctrl, Modifier::Ctrl]));
+    }
 }
