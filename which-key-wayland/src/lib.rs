@@ -5,5 +5,5 @@ mod keybind;
 mod layer;
 
 pub use cli::{Cli, SubCommand};
-pub use config::parser::config_parse;
+pub use config::Config;
 pub use layer::client::WhichKey;
