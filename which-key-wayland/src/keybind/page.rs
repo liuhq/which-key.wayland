@@ -75,3 +75,141 @@ impl KeyBindMap {
             .map(|_| *key)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::keybind::{Bind, BindKind};
+    use std::collections::BTreeMap;
+
+    fn mk_key(s: &str) -> Key {
+        s.parse().unwrap()
+    }
+
+    fn mk_bind(desc: &str) -> Bind {
+        Bind {
+            bind: BindKind::Action(Vec::new()),
+            desc: desc.to_string(),
+        }
+    }
+
+    fn mk_map(keys: &[&str]) -> KeyBindMap {
+        let mut map = BTreeMap::new();
+        for (i, k) in keys.iter().enumerate() {
+            map.insert(mk_key(k), mk_bind(&format!("desc{i}")));
+        }
+        KeyBindMap::new(map)
+    }
+
+    #[test]
+    fn page_forward_from_start() {
+        let map = mk_map(&["A", "B", "C", "D", "E"]);
+        let page = map.page(None, PageDirection::Forward, 3);
+        assert_eq!(page.items.len(), 3);
+        assert_eq!(page.items[0].0, &mk_key("A"));
+        assert_eq!(page.items[1].0, &mk_key("B"));
+        assert_eq!(page.items[2].0, &mk_key("C"));
+    }
+
+    #[test]
+    fn page_forward_from_cursor() {
+        let map = mk_map(&["A", "B", "C", "D", "E"]);
+        let cursor = mk_key("B");
+        let page = map.page(Some(&cursor), PageDirection::Forward, 3);
+        assert_eq!(page.items.len(), 3);
+        assert_eq!(page.items[0].0, &mk_key("C"));
+        assert_eq!(page.items[1].0, &mk_key("D"));
+        assert_eq!(page.items[2].0, &mk_key("E"));
+    }
+
+    #[test]
+    fn page_forward_from_last() {
+        let map = mk_map(&["A", "B"]);
+        let cursor = mk_key("B");
+        let page = map.page(Some(&cursor), PageDirection::Forward, 3);
+        assert!(page.items.is_empty());
+    }
+
+    #[test]
+    fn page_backward_from_cursor() {
+        let map = mk_map(&["A", "B", "C", "D", "E"]);
+        let cursor = mk_key("D");
+        let page = map.page(Some(&cursor), PageDirection::Backward, 3);
+        assert_eq!(page.items.len(), 3);
+        assert_eq!(page.items[0].0, &mk_key("A"));
+        assert_eq!(page.items[1].0, &mk_key("B"));
+        assert_eq!(page.items[2].0, &mk_key("C"));
+    }
+
+    #[test]
+    fn page_backward_from_first() {
+        let map = mk_map(&["A", "B"]);
+        let cursor = mk_key("A");
+        let page = map.page(Some(&cursor), PageDirection::Backward, 3);
+        assert!(page.items.is_empty());
+    }
+
+    #[test]
+    fn page_backward_from_start() {
+        let map = mk_map(&["A", "B", "C", "D", "E"]);
+        let page = map.page(None, PageDirection::Backward, 3);
+        assert_eq!(page.items.len(), 3);
+        assert_eq!(page.items[0].0, &mk_key("C"));
+        assert_eq!(page.items[1].0, &mk_key("D"));
+        assert_eq!(page.items[2].0, &mk_key("E"));
+    }
+
+    #[test]
+    fn page_forward_with_next_cursor() {
+        let map = mk_map(&["A", "B", "C", "D", "E"]);
+        let page = map.page(None, PageDirection::Forward, 3);
+        assert!(page.next_cursor.is_some());
+        assert_eq!(page.next_cursor.unwrap(), &mk_key("C"));
+    }
+
+    #[test]
+    fn page_forward_no_next_cursor_at_end() {
+        let map = mk_map(&["A", "B"]);
+        let page = map.page(None, PageDirection::Forward, 5);
+        assert!(page.next_cursor.is_none());
+    }
+
+    #[test]
+    fn page_forward_prev_cursor_is_none_from_start() {
+        let map = mk_map(&["A", "B", "C"]);
+        let page = map.page(None, PageDirection::Forward, 2);
+        assert!(page.prev_cursor.is_none());
+    }
+
+    #[test]
+    fn page_forward_prev_cursor_from_middle() {
+        let map = mk_map(&["A", "B", "C", "D"]);
+        let cursor = mk_key("B");
+        let page = map.page(Some(&cursor), PageDirection::Forward, 2);
+        assert!(page.prev_cursor.is_some());
+        assert_eq!(page.prev_cursor.unwrap(), &mk_key("C"));
+    }
+
+    #[test]
+    fn empty_map_returns_empty_page() {
+        let map = KeyBindMap::default();
+        let page = map.page(None, PageDirection::Forward, 10);
+        assert!(page.items.is_empty());
+        assert!(page.next_cursor.is_none());
+        assert!(page.prev_cursor.is_none());
+    }
+
+    #[test]
+    fn page_size_larger_than_map() {
+        let map = mk_map(&["A", "B"]);
+        let page = map.page(None, PageDirection::Forward, 10);
+        assert_eq!(page.items.len(), 2);
+    }
+
+    #[test]
+    fn page_size_zero() {
+        let map = mk_map(&["A", "B", "C"]);
+        let page = map.page(None, PageDirection::Forward, 0);
+        assert!(page.items.is_empty());
+    }
+}

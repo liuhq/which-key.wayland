@@ -82,6 +82,14 @@ impl Sh {
         Self { shell, command }
     }
 
+    pub fn shell(&self) -> &str {
+        &self.shell
+    }
+
+    pub fn command(&self) -> &str {
+        &self.command
+    }
+
     pub fn run(&self) -> anyhow::Result<()> {
         process::Command::new(&self.shell)
             .arg("-c")
@@ -91,5 +99,147 @@ impl Sh {
             .stderr(Stdio::null())
             .spawn()?;
         Ok(())
+    }
+}
+
+impl Spawn {
+    pub fn program(&self) -> &str {
+        &self.program
+    }
+
+    pub fn args(&self) -> &[String] {
+        &self.args
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kdl::{KdlDocument, KdlNode};
+
+    fn parse_kdl_nodes(source: &str) -> Vec<KdlNode> {
+        let doc: KdlDocument = source.parse().unwrap();
+        doc.nodes().iter().cloned().collect()
+    }
+
+    fn first_node(source: &str) -> KdlNode {
+        parse_kdl_nodes(source).into_iter().next().unwrap()
+    }
+
+    #[test]
+    fn is_action_true_for_spawn() {
+        let node = first_node("spawn \"firefox\"");
+        assert!(Action::is_action(&node));
+    }
+
+    #[test]
+    fn is_action_true_for_sh() {
+        let node = first_node("sh \"echo hello\"");
+        assert!(Action::is_action(&node));
+    }
+
+    #[test]
+    fn is_action_false_for_unknown() {
+        let node = first_node("unknown \"foo\"");
+        assert!(!Action::is_action(&node));
+    }
+
+    #[test]
+    fn is_action_false_for_empty_name() {
+        let node = first_node("exec \"foo\"");
+        assert!(!Action::is_action(&node));
+    }
+
+    #[test]
+    fn parse_spawn_single_arg() {
+        let node = first_node("spawn \"firefox\"");
+        let action = Action::parse(&node).unwrap();
+        match action {
+            Action::Spawn(s) => {
+                assert_eq!(s.program(), "firefox");
+                assert!(s.args().is_empty());
+            }
+            _ => panic!("Expected Spawn action"),
+        }
+    }
+
+    #[test]
+    fn parse_spawn_multiple_args() {
+        let node = first_node("spawn \"firefox\" \"--new-window\" \"https://example.com\"");
+        let action = Action::parse(&node).unwrap();
+        match action {
+            Action::Spawn(s) => {
+                assert_eq!(s.program(), "firefox");
+                assert_eq!(s.args(), &["--new-window", "https://example.com"]);
+            }
+            _ => panic!("Expected Spawn action"),
+        }
+    }
+
+    #[test]
+    fn parse_spawn_no_args_error() {
+        let node = first_node("spawn");
+        let result = Action::parse(&node);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_sh_single_arg() {
+        let node = first_node("sh \"echo hello\"");
+        let action = Action::parse(&node).unwrap();
+        match action {
+            Action::Sh(s) => {
+                assert_eq!(s.shell(), "sh");
+                assert_eq!(s.command(), "echo hello");
+            }
+            _ => panic!("Expected Sh action"),
+        }
+    }
+
+    #[test]
+    fn parse_sh_multiple_args_joined() {
+        let node = first_node("sh \"echo\" \"hello\" \"world\"");
+        let action = Action::parse(&node).unwrap();
+        match action {
+            Action::Sh(s) => {
+                assert_eq!(s.shell(), "sh");
+                assert_eq!(s.command(), "echohelloworld");
+            }
+            _ => panic!("Expected Sh action"),
+        }
+    }
+
+    #[test]
+    fn parse_sh_no_args() {
+        let node = first_node("sh");
+        let action = Action::parse(&node).unwrap();
+        match action {
+            Action::Sh(s) => {
+                assert_eq!(s.shell(), "sh");
+                assert_eq!(s.command(), "");
+            }
+            _ => panic!("Expected Sh action"),
+        }
+    }
+
+    #[test]
+    fn parse_unknown_action_name_error() {
+        let node = first_node("unknown \"arg\"");
+        let result = Action::parse(&node);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn spawn_new_constructor() {
+        let s = Spawn::new("firefox".into(), vec!["--new-window".into()]);
+        assert_eq!(s.program(), "firefox");
+        assert_eq!(s.args(), &["--new-window"]);
+    }
+
+    #[test]
+    fn sh_new_constructor() {
+        let s = Sh::new("bash".into(), "echo hello".into());
+        assert_eq!(s.shell(), "bash");
+        assert_eq!(s.command(), "echo hello");
     }
 }

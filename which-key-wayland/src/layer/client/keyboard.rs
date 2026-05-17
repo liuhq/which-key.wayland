@@ -197,3 +197,80 @@ impl KeyboardHandler for WhichKey {
 }
 
 delegate_keyboard!(WhichKey);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use smithay_client_toolkit::seat::keyboard::Modifiers;
+    use xkbcommon::xkb;
+
+    fn ks(name: &str) -> Keysym {
+        xkb::keysym_from_name(name, xkb::KEYSYM_NO_FLAGS)
+    }
+
+    fn mods(ctrl: bool, shift: bool, alt: bool, logo: bool) -> Modifiers {
+        Modifiers {
+            ctrl,
+            shift,
+            alt,
+            logo,
+            ..Modifiers::default()
+        }
+    }
+
+    #[test]
+    fn alpha_key_no_modifiers() {
+        let result = keysym_to_key_string(ks("a"), &mods(false, false, false, false));
+        assert_eq!(result, Some("A".to_string()));
+    }
+
+    #[test]
+    fn alpha_key_uppercase() {
+        let result = keysym_to_key_string(ks("A"), &mods(false, false, false, false));
+        assert_eq!(result, Some("A".to_string()));
+    }
+
+    #[test]
+    fn alpha_key_with_ctrl() {
+        let result = keysym_to_key_string(ks("c"), &mods(true, false, false, false));
+        assert_eq!(result, Some("Ctrl+C".to_string()));
+    }
+
+    #[test]
+    fn alpha_key_with_shift() {
+        let result = keysym_to_key_string(ks("x"), &mods(false, true, false, false));
+        assert_eq!(result, Some("Shift+X".to_string()));
+    }
+
+    #[test]
+    fn alpha_key_with_alt() {
+        let result = keysym_to_key_string(ks("m"), &mods(false, false, true, false));
+        assert_eq!(result, Some("Alt+M".to_string()));
+    }
+
+    #[test]
+    fn alpha_key_with_super() {
+        let result = keysym_to_key_string(ks("r"), &mods(false, false, false, true));
+        assert_eq!(result, Some("Super+R".to_string()));
+    }
+
+    #[test]
+    fn alpha_key_with_all_modifiers_sorted() {
+        let result = keysym_to_key_string(ks("q"), &mods(true, true, true, true));
+        assert_eq!(result, Some("Alt+Ctrl+Shift+Super+Q".to_string()));
+    }
+
+    #[test]
+    fn non_alpha_keysym_returns_none() {
+        assert!(keysym_to_key_string(ks("Escape"), &mods(false, false, false, false)).is_none());
+        assert!(keysym_to_key_string(ks("Return"), &mods(false, false, false, false)).is_none());
+        assert!(keysym_to_key_string(ks("F1"), &mods(false, false, false, false)).is_none());
+        assert!(keysym_to_key_string(ks("1"), &mods(false, false, false, false)).is_none());
+        assert!(keysym_to_key_string(ks("Tab"), &mods(false, false, false, false)).is_none());
+    }
+
+    #[test]
+    fn non_alpha_with_modifiers_still_returns_none() {
+        assert!(keysym_to_key_string(ks("Escape"), &mods(true, false, false, false)).is_none());
+    }
+}
