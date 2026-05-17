@@ -1,5 +1,5 @@
 use clap::Parser;
-use which_key_wayland::{Cli, SubCommand, WhichKey, config_parse, ipc};
+use which_key_wayland::{Cli, Config, SubCommand, WhichKey, ipc};
 
 fn main() {
     env_logger::init();
@@ -16,19 +16,7 @@ fn main() {
         None => {}
     }
 
-    let config = match std::fs::read_to_string("./examples/config.kdl") {
-        Ok(raw) => match config_parse(&raw) {
-            Ok(config) => config,
-            Err(err) => {
-                log::error!("{err}");
-                return;
-            }
-        },
-        Err(err) => {
-            log::error!("{err}");
-            return;
-        }
-    };
+    let config = Config::init();
 
     let Some((rx, wake_fd)) = ipc::init() else {
         return;
