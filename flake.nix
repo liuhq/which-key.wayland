@@ -42,7 +42,7 @@
 
       packages.${system} = rec {
         default = which-key-wayland;
-        which-key-wayland = pkgs.callPackage ./nix/package.nix {};
+        which-key-wayland = pkgs.callPackage ./nix/package.nix { inherit self; };
       };
 
       devShells.${system}.default = pkgs.mkShell {
