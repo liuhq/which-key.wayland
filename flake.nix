@@ -40,6 +40,11 @@
           );
       };
 
+      packages.${system} = rec {
+        default = which-key-wayland;
+        which-key-wayland = pkgs.callPackage ./nix/package.nix {};
+      };
+
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
           rustToolchain
