@@ -58,7 +58,6 @@ impl KeyboardHandler for WhichKey {
             && layer.wl_surface() == surface
         {
             log::debug!("Keyboard focus on surface with pressed syms: {keysyms:?}");
-            self.keyboard_focus = true;
         }
     }
 
@@ -74,8 +73,6 @@ impl KeyboardHandler for WhichKey {
             && layer.wl_surface() == surface
         {
             log::debug!("Release keyboard focus on surface");
-            self.keyboard_focus = false;
-
             self.hide_overlay()
         }
     }

@@ -61,7 +61,6 @@ pub struct WhichKey {
 
     pub state: AppState,
     pub first_configure: bool,
-    pub keyboard_focus: bool,
     pub config: Rc<Config>,
     pub wk_text: WkText,
     pub next_cursor: Option<String>,
@@ -131,7 +130,6 @@ impl WhichKey {
 
                 state: AppState::Showing,
                 first_configure: true,
-                keyboard_focus: false,
                 config: Rc::new(config),
                 wk_text,
                 next_cursor: None,
@@ -160,7 +158,6 @@ impl WhichKey {
         if let Some(kbd) = self.keyboard.take() {
             kbd.release();
         }
-        self.keyboard_focus = false;
         self.state = AppState::Hidden;
     }
 
