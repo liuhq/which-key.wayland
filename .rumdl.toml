@@ -1,0 +1,12 @@
+[global]
+include = ["docs/**/*.md", "README.md"]
+flavor = "gfm"
+
+[MD007]
+indent = 2 # Unordered list indentation
+
+[MD013]
+line-length = 120   # Line length
+code-blocks = false # Exclude code blocks from line length check
+tables = false      # Exclude tables from line length check
+headings = false    # Include headings in line length check
