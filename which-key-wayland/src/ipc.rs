@@ -1,8 +1,7 @@
 use std::os::fd::OwnedFd;
 use std::sync::mpsc;
 
-use zbus::blocking::{Connection, MessageIterator};
-use zbus::fdo::RequestNameFlags;
+use zbus::blocking::{connection::Builder, Connection, MessageIterator};
 use zbus::{self, interface};
 
 pub const DBUS_NAME: &str = "com.hrtius.WhichKey";
@@ -41,70 +40,69 @@ impl WhichKeyIface {
 }
 
 pub fn init() -> Option<(mpsc::Receiver<DBusCommand>, OwnedFd)> {
-    let conn = match Connection::session() {
-        Ok(c) => c,
+    let (tx, rx) = mpsc::channel();
+
+    let wake_fd = match rustix::event::eventfd(
+        0,
+        rustix::event::EventfdFlags::NONBLOCK | rustix::event::EventfdFlags::CLOEXEC,
+    ) {
+        Ok(fd) => fd,
+        Err(e) => {
+            log::error!("Failed to create eventfd: {e}");
+            return None;
+        }
+    };
+
+    let wake_fd_dbus = match wake_fd.try_clone() {
+        Ok(fd) => fd,
+        Err(e) => {
+            log::error!("Failed to clone eventfd: {e}");
+            return None;
+        }
+    };
+
+    let iface = WhichKeyIface {
+        tx,
+        wake_fd: wake_fd_dbus,
+    };
+
+    let conn = match Builder::session() {
+        Ok(b) => b,
         Err(e) => {
             log::error!("Failed to connect to DBus session bus: {e}");
             return None;
         }
     };
 
-    match conn.request_name_with_flags(DBUS_NAME, RequestNameFlags::DoNotQueue.into()) {
-        Ok(_) => {
-            let (tx, rx) = mpsc::channel();
+    let conn = match conn
+        .name(DBUS_NAME)
+        .and_then(|b| b.serve_at(DBUS_PATH, iface))
+    {
+        Ok(b) => b,
+        Err(e) => {
+            log::error!("Failed to set up DBus interface: {e}");
+            return None;
+        }
+    };
 
-            let wake_fd = match rustix::event::eventfd(
-                0,
-                rustix::event::EventfdFlags::NONBLOCK
-                    | rustix::event::EventfdFlags::CLOEXEC,
-            ) {
-                Ok(fd) => fd,
-                Err(e) => {
-                    log::error!("Failed to create eventfd: {e}");
-                    return None;
-                }
-            };
-
-            let wake_fd_dbus = match wake_fd.try_clone() {
-                Ok(fd) => fd,
-                Err(e) => {
-                    log::error!("Failed to clone eventfd: {e}");
-                    return None;
-                }
-            };
-
-            start_dbus_server(conn, tx, wake_fd_dbus);
+    match conn.build() {
+        Ok(conn) => {
+            start_dbus_server(conn);
             Some((rx, wake_fd))
         }
         Err(zbus::Error::NameTaken) => {
-            let _ = conn.call_method(
-                Some(DBUS_NAME),
-                DBUS_PATH,
-                Some(DBUS_NAME),
-                "Show",
-                &(),
-            );
+            ipc_show();
             None
         }
         Err(e) => {
-            log::error!("Failed to request DBus name: {e}");
+            log::error!("Failed to build DBus connection: {e}");
             None
         }
     }
 }
 
-pub fn start_dbus_server(
-    conn: Connection,
-    tx: mpsc::Sender<DBusCommand>,
-    wake_fd: OwnedFd,
-) -> std::thread::JoinHandle<()> {
+pub fn start_dbus_server(conn: Connection) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || {
-        let iface = WhichKeyIface { tx, wake_fd };
-        if let Err(e) = conn.object_server().at(DBUS_PATH, iface) {
-            log::error!("Failed to register DBus interface: {e}");
-            return;
-        }
-
         let iter = MessageIterator::from(conn);
         for msg in iter {
             match msg {
