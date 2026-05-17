@@ -32,26 +32,10 @@ bind {
     T desc="Terminal" { spawn "foot" "sh"; }
     C desc="Calculator" { spawn "gnome-calculator"; }
     N desc="Niri" {
+      W desc="Windows" { sh "foot --hold niri msg windows"; }
       L desc="Layers" { sh "foot --hold niri msg layers"; }
       O desc="Outputs" { spawn "foot" "--hold" "niri" "msg" "outputs"; }
     }
   }
-  D desc="The description's text is wrapped when the line is too long to fit" { sh "echo d"; }
-  E desc="Test e" { sh "echo e"; }
-  F desc="Test f" { sh "echo f"; }
-  G desc="Test g" { sh "echo g"; }
-  H desc="Test h" { sh "echo h"; }
-  I desc="Test i" { sh "echo i"; }
-  J desc="Test j" { sh "echo j"; }
-  K desc="Test k" { sh "echo k"; }
-  L desc="Test l" { sh "echo l"; }
-  M desc="Test m" { sh "echo m"; }
-  N desc="Test n" { sh "echo n"; }
-  O desc="Test o" { sh "echo o"; }
-  P desc="Test p" { sh "echo p"; }
-  Q desc="Test q" { sh "echo q"; }
-  R desc="Test r" { sh "echo r"; }
-  S desc="Test s" { sh "echo s"; }
-  Ctrl+W desc="The description's text is wrapped when the line is too long to fit" { sh "foot --hold niri msg windows"; }
   Ctrl+Shift+F desc="File Manager" { spawn "nautilus"; }
 }
