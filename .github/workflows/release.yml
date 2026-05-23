@@ -1,0 +1,52 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev libwayland-dev
+      - name: Build
+        run: cargo build --release
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: which-key-wayland-${{ github.ref_name }}
+          path: target/release/which-key-wayland
+          compression-level: 6
+          overwrite: true
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    continue-on-error: false
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+      - name: Download Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create Release ${{ github.ref_name }}
+        uses: softprops/action-gh-release@v2.3.3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: true
+          files: dist/**/*
+          make_latest: true
