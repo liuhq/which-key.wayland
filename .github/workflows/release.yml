@@ -4,10 +4,8 @@ on:
   push:
     tags:
       - '*'
-
 env:
   CARGO_TERM_COLOR: always
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,6 +19,10 @@ jobs:
           sudo apt-get install -y libxkbcommon-dev libwayland-dev
       - name: Build
         run: cargo build --release
+      - name: Pre-release
+        run: |
+          cd target/release
+          mv which-key-wayland which-key-wayland_${{ github.ref_name }}
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
