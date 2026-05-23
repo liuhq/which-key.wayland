@@ -4,7 +4,7 @@ pub mod parser;
 
 use std::{env, path::PathBuf};
 
-pub use define::{Config, Footer, SYMBOL_INDICATOR};
+pub use define::{Config, ConfigColor, Footer, SYMBOL_INDICATOR};
 
 use crate::config::parser::config_parse;
 

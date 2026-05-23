@@ -14,7 +14,7 @@ use crate::{
 pub struct WkRender;
 
 impl WkRender {
-    const CORNER_KAPPA: f32 = 0.5522847498;
+    const CORNER_KAPPA: f32 = 0.552_284_8;
 
     fn rounded_rect_path(width: u32, height: u32, radius: u32) -> Option<tiny_skia::Path> {
         if radius == 0 || width == 0 || height == 0 {
@@ -77,13 +77,14 @@ impl WkRender {
         entries: &Page,
         header: Option<(&str, &str)>,
     ) {
+        let color = &config.color;
         let mut pixmap = PixmapMut::from_bytes(canvas, size.width(), size.height())
             .expect("Can't create PixmapMut");
         if let Some(path) =
             Self::rounded_rect_path(size.width(), size.height(), config.layout.radius)
         {
             let mut paint = Paint::default();
-            paint.set_color(config.color.bg.into());
+            paint.set_color(color.bg.into());
             paint.anti_alias = true;
             pixmap.fill_path(
                 &path,
@@ -93,7 +94,7 @@ impl WkRender {
                 None,
             );
         } else {
-            pixmap.fill(config.color.bg.into());
+            pixmap.fill(color.bg.into());
         }
         let pixmap_data = pixmap.data_mut();
 
@@ -119,7 +120,7 @@ impl WkRender {
                     Offset::new(config.layout.padding, current_y),
                     Size::new(usable_w, size.height() - current_y),
                     stride,
-                    config.color.fg_description.into(),
+                    color.fg_group.into(),
                 );
                 let lines_offset = wk_text.lines_h(group_desc, usable_w);
                 current_y += lines_offset;
@@ -147,7 +148,7 @@ impl WkRender {
                         Offset::new(config.layout.padding, current_y),
                         Size::new(key_w, usable_h),
                         stride,
-                        config.color.fg_key.into(),
+                        color.fg_key.into(),
                     );
                 }
 
@@ -161,7 +162,7 @@ impl WkRender {
                         Offset::new(config.layout.padding + key_w + padded_indicator, current_y),
                         Size::new(ind_w, usable_h),
                         stride,
-                        config.color.fg_separator.into(),
+                        color.fg_separator.into(),
                     );
                 }
 
@@ -175,7 +176,7 @@ impl WkRender {
                         Offset::new(config.layout.padding + key_w + ind_w, current_y),
                         Size::new(des_w, usable_h),
                         stride,
-                        config.color.fg_description.into(),
+                        bind.bind.fg_from(color),
                     );
                 }
 
@@ -193,8 +194,8 @@ impl WkRender {
                 max_height as u32
             });
 
-            let key_color: cosmic_text::Color = config.color.fg_key.into();
-            let desc_color: cosmic_text::Color = config.color.fg_description.into();
+            let key_color: cosmic_text::Color = color.fg_key.into();
+            let desc_color: cosmic_text::Color = color.fg_action.into();
 
             let footer = Footer::default();
             let spans: Vec<_> = footer

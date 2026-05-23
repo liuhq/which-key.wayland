@@ -21,10 +21,11 @@ mod tests {
         assert_eq!(c.timeout, 2000);
         assert!((c.font.size - 16.0).abs() < f32::EPSILON);
         assert!((c.font.line_height - 20.0).abs() < f32::EPSILON);
-        assert_eq!(c.color.fg_key, WkColor::rgba(216, 222, 233, 255),);
-        assert_eq!(c.color.fg_separator, WkColor::rgba(76, 86, 106, 255),);
-        assert_eq!(c.color.fg_description, WkColor::rgba(136, 192, 208, 255),);
-        assert_eq!(c.color.bg, WkColor::rgba(46, 52, 64, 255),);
+        assert_eq!(c.color.fg_key, WkColor::rgba(216, 222, 233, 255));
+        assert_eq!(c.color.fg_separator, WkColor::rgba(76, 86, 106, 255));
+        assert_eq!(c.color.fg_action, WkColor::rgba(136, 192, 208, 255));
+        assert_eq!(c.color.fg_group, WkColor::rgba(94, 129, 172, 255));
+        assert_eq!(c.color.bg, WkColor::rgba(46, 52, 64, 255));
         assert_eq!(c.layout.width, 500);
         assert_eq!(c.layout.max_items, 10);
         assert_eq!(c.layout.padding, 4);
@@ -47,13 +48,11 @@ mod tests {
         assert_eq!(c.timeout, 0);
         assert!((c.font.size - 16.0).abs() < f32::EPSILON);
         assert!((c.font.line_height - 20.0).abs() < f32::EPSILON);
-        assert_eq!(c.color.fg_key, WkColor::from_hex("#D8DEE9").unwrap(),);
-        assert_eq!(c.color.fg_separator, WkColor::from_hex("#4C566A").unwrap(),);
-        assert_eq!(
-            c.color.fg_description,
-            WkColor::from_hex("#88C0D0").unwrap(),
-        );
-        assert_eq!(c.color.bg, WkColor::from_hex("#2E3440").unwrap(),);
+        assert_eq!(c.color.fg_key, WkColor::from_hex("#D8DEE9").unwrap());
+        assert_eq!(c.color.fg_separator, WkColor::from_hex("#4C566A").unwrap());
+        assert_eq!(c.color.fg_action, WkColor::from_hex("#88C0D0").unwrap());
+        assert_eq!(c.color.fg_group, WkColor::from_hex("#5E81AC").unwrap());
+        assert_eq!(c.color.bg, WkColor::from_hex("#2E3440").unwrap());
         assert_eq!(c.layout.width, 500);
         assert_eq!(c.layout.max_items, 10);
         assert_eq!(c.layout.padding, 8);

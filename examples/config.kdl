@@ -8,7 +8,8 @@ font {
 color {
   fg-key "#D8DEE9"
   fg-separator "#4C566A"
-  fg-description "#88C0D0"
+  fg-action "#88C0D0"
+  fg-group "#5E81AC"
   bg "#2E3440"
 }
 

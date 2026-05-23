@@ -62,7 +62,9 @@ pub struct ConfigColor {
     #[node(default = WkColor::rgba(76, 86, 106, 255))]
     pub fg_separator: WkColor,
     #[node(default = WkColor::rgba(136, 192, 208, 255))]
-    pub fg_description: WkColor,
+    pub fg_action: WkColor,
+    #[node(default = WkColor::rgba(94, 129, 172, 255))]
+    pub fg_group: WkColor,
     #[node(default = WkColor::rgba(46, 52, 64, 255))]
     pub bg: WkColor,
 }
@@ -185,7 +187,8 @@ mod tests {
         let c = ConfigColor::default();
         assert_eq!(c.fg_key, WkColor::rgba(216, 222, 233, 255));
         assert_eq!(c.fg_separator, WkColor::rgba(76, 86, 106, 255));
-        assert_eq!(c.fg_description, WkColor::rgba(136, 192, 208, 255));
+        assert_eq!(c.fg_action, WkColor::rgba(136, 192, 208, 255));
+        assert_eq!(c.fg_group, WkColor::rgba(94, 129, 172, 255));
         assert_eq!(c.bg, WkColor::rgba(46, 52, 64, 255));
     }
 

@@ -4,7 +4,10 @@ pub mod page;
 
 use std::collections::BTreeMap;
 
-use crate::keybind::{actions::Action, key::Key};
+use crate::{
+    config::ConfigColor,
+    keybind::{actions::Action, key::Key},
+};
 
 #[derive(Debug)]
 pub struct Bind {
@@ -27,4 +30,13 @@ impl KeyBindMap {
 pub enum BindKind {
     Action(Vec<Action>),
     Group(KeyBindMap),
+}
+
+impl BindKind {
+    pub fn fg_from(&self, color: &ConfigColor) -> cosmic_text::Color {
+        match self {
+            BindKind::Action(_) => color.fg_action.into(),
+            BindKind::Group(_) => color.fg_group.into(),
+        }
+    }
 }
