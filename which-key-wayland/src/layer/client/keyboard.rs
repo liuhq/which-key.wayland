@@ -103,18 +103,14 @@ impl KeyboardHandler for WhichKey {
         if self.modifiers.ctrl {
             match event.keysym {
                 Keysym::d => {
-                    if let Some(nc) = self.next_cursor.take()
-                        && let Ok(key) = Key::from_str(&nc)
-                    {
-                        self.draw(Some(&key), PageDirection::Forward);
+                    if let Some(idx) = self.next_cursor.take() {
+                        self.draw(Some(idx), PageDirection::Forward);
                     }
                     return;
                 }
                 Keysym::u => {
-                    if let Some(pc) = self.prev_cursor.take()
-                        && let Ok(key) = Key::from_str(&pc)
-                    {
-                        self.draw(Some(&key), PageDirection::Backward);
+                    if let Some(idx) = self.prev_cursor.take() {
+                        self.draw(Some(idx), PageDirection::Backward);
                     }
                     return;
                 }

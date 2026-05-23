@@ -63,8 +63,8 @@ pub struct WhichKey {
     pub first_configure: bool,
     pub config: Rc<Config>,
     pub wk_text: WkText,
-    pub next_cursor: Option<String>,
-    pub prev_cursor: Option<String>,
+    pub next_cursor: Option<usize>,
+    pub prev_cursor: Option<usize>,
     pub modifiers: Modifiers,
     pub key_path: Vec<Key>,
     pub last_key_time: Option<Instant>,
@@ -234,7 +234,7 @@ impl WhichKey {
 
             match self.state {
                 AppState::Exiting => {
-                    log::info!("Exiting wk_layer");
+                    log::info!("Exiting WhichKey");
                     break;
                 }
                 AppState::Showing => {
@@ -315,7 +315,7 @@ impl WhichKey {
         map
     }
 
-    pub fn draw(&mut self, cursor: Option<&Key>, direction: PageDirection) {
+    pub fn draw(&mut self, cursor: Option<usize>, direction: PageDirection) {
         let Some(ref layer) = self.layer else {
             return;
         };
@@ -342,10 +342,23 @@ impl WhichKey {
                 }
                 break;
             }
-            map.page(cursor, direction, max_items)
+            let total = map.len();
+            let page = map.page(cursor, direction, max_items);
+            let page_start = match cursor {
+                Some(c) => match direction {
+                    PageDirection::Forward => (c + 1).min(total),
+                    PageDirection::Backward => c.saturating_sub(max_items),
+                },
+                None => match direction {
+                    PageDirection::Forward => 0,
+                    PageDirection::Backward => total.saturating_sub(max_items),
+                },
+            };
+            self.next_cursor = (!page.items.is_empty() && page_start + page.items.len() < total)
+                .then(|| page_start + page.items.len() - 1);
+            self.prev_cursor = (page_start > 0).then_some(page_start);
+            page
         };
-        let next_cursor = page.next_cursor.map(|k| k.to_string());
-        let prev_cursor = page.prev_cursor.map(|k| k.to_string());
 
         let header = self.key_path.last().and_then(|last_key| {
             self.parent_bind_map()
@@ -377,9 +390,6 @@ impl WhichKey {
             header_ref,
         );
 
-        self.next_cursor = next_cursor;
-        self.prev_cursor = prev_cursor;
-
         layer
             .wl_surface()
             .damage_buffer(0, 0, width as i32, height as i32);
@@ -396,7 +406,7 @@ impl WhichKey {
     pub fn calc_h(
         config: &Config,
         wk_text: &mut WkText,
-        cursor: Option<&Key>,
+        cursor: Option<usize>,
         direction: PageDirection,
         key_path: &[Key],
     ) -> u32 {
