@@ -57,6 +57,7 @@
           libxkbcommon
 
           rumdl # Markdown linter and formatter
+          just
         ];
 
         env = {
