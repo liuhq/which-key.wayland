@@ -1786,7 +1786,7 @@ dependencies = [
  "rustix",
  "smithay-client-toolkit",
  "tiny-skia",
- "which-key-wayland-macros",
+ "which-key-wayland-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "xkbcommon",
  "zbus",
 ]
@@ -1794,6 +1794,17 @@ dependencies = [
 [[package]]
 name = "which-key-wayland-macros"
 version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "which-key-wayland-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5c9b86bb04d620489e82f0a454239f5895fef273f0effef7b2035cffae10a2a"
 dependencies = [
  "proc-macro2",
  "quote",

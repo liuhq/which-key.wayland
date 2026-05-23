@@ -2,9 +2,14 @@
 name = "which-key-wayland"
 version = "0.1.0"
 edition = "2024"
+description = "A key-hint panel for Wayland, inspired by the Neovim plugin which-key.nvim and the Helix editor style."
+keywords = ["which-key", "wayland"]
+repository = "https://github.com/liuhq/which-key.wayland"
+readme = "../README.md"
+license = "MIT"
 
 [dependencies]
-which-key-wayland-macros = { path = "../which-key-wayland-macros" }
+which-key-wayland-macros = "0.1.0"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 cosmic-text = "0.19.0"

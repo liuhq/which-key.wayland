@@ -2,6 +2,10 @@
 name = "which-key-wayland-macros"
 version = "0.1.0"
 edition = "2024"
+description = "Proc-macro for which-key.wayland"
+repository = "https://github.com/liuhq/which-key.wayland"
+readme = "../README.md"
+license = "MIT"
 
 [lib]
 proc-macro = true
