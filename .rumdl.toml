@@ -10,6 +10,7 @@ line-length = 120
 code-blocks = false
 tables = false
 headings = false
+reflow = true
 
 [MD058]
 minimum-before = 1
