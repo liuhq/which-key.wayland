@@ -174,7 +174,10 @@ mod tests {
 
         let page = map.page(None, PageDirection::Forward, 10);
         let keys: Vec<&Key> = page.items.iter().map(|(k, _)| *k).collect();
-        assert_eq!(keys, vec![&mk_key("B"), &mk_key("D"), &mk_key("A"), &mk_key("C")]);
+        assert_eq!(
+            keys,
+            vec![&mk_key("B"), &mk_key("D"), &mk_key("A"), &mk_key("C")]
+        );
     }
 
     #[test]

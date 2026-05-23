@@ -110,7 +110,8 @@ mod tests {
 
     #[test]
     fn nested_group_bind() {
-        let raw = "bind {\n  A desc=\"Apps\" {\n    T desc=\"Terminal\" { spawn \"foot\"; }\n  }\n}";
+        let raw =
+            "bind {\n  A desc=\"Apps\" {\n    T desc=\"Terminal\" { spawn \"foot\"; }\n  }\n}";
         let map = parse(raw).unwrap();
         assert_eq!(map.map.len(), 1);
         let key_a: Key = "A".parse().unwrap();
@@ -149,7 +150,8 @@ mod tests {
 
     #[test]
     fn group_prepends_symbol() {
-        let raw = "bind {\n  G desc=\"Group name\" {\n    C desc=\"Child\" { spawn \"app\"; }\n  }\n}";
+        let raw =
+            "bind {\n  G desc=\"Group name\" {\n    C desc=\"Child\" { spawn \"app\"; }\n  }\n}";
         let map = parse(raw).unwrap();
         let key: Key = "G".parse().unwrap();
         let bind = map.map.get(&key).unwrap();

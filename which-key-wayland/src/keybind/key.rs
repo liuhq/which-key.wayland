@@ -287,10 +287,7 @@ mod tests {
 
     #[test]
     fn display_multiple_modifiers_sorted() {
-        let key = Key::new(
-            Some(vec![Modifier::Shift, Modifier::Ctrl]),
-            "X".to_string(),
-        );
+        let key = Key::new(Some(vec![Modifier::Shift, Modifier::Ctrl]), "X".to_string());
         assert_eq!(key.to_string(), "Shift+Ctrl+X");
     }
 
@@ -314,6 +311,9 @@ mod tests {
             Some(vec![Modifier::Ctrl, Modifier::Ctrl, Modifier::Shift]),
             "A".to_string(),
         );
-        assert_eq!(key.modifiers, Some(vec![Modifier::Shift, Modifier::Ctrl, Modifier::Ctrl]));
+        assert_eq!(
+            key.modifiers,
+            Some(vec![Modifier::Shift, Modifier::Ctrl, Modifier::Ctrl])
+        );
     }
 }

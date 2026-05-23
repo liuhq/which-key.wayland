@@ -1,7 +1,7 @@
 use std::os::fd::OwnedFd;
 use std::sync::mpsc;
 
-use zbus::blocking::{connection::Builder, Connection, MessageIterator};
+use zbus::blocking::{Connection, MessageIterator, connection::Builder};
 use zbus::{self, interface};
 
 pub const DBUS_NAME: &str = "com.hrtius.WhichKey";
