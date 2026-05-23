@@ -11,7 +11,7 @@ build-debug:
 
 [group('build')]
 build-release:
-  cargo release
+  cargo build --release
 
 [group('test')]
 test-debug:
