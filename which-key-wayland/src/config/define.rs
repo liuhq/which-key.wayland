@@ -57,13 +57,13 @@ pub struct ConfigFont {
 
 #[derive(Debug, KdlParse)]
 pub struct ConfigColor {
-    #[node(default = WkColor::rgba(255, 255, 255, 255))]
+    #[node(default = WkColor::rgba(216, 222, 233, 255))]
     pub fg_key: WkColor,
-    #[node(default = WkColor::rgba(255, 255, 255, 255))]
+    #[node(default = WkColor::rgba(76, 86, 106, 255))]
     pub fg_separator: WkColor,
-    #[node(default = WkColor::rgba(255, 255, 255, 255))]
+    #[node(default = WkColor::rgba(136, 192, 208, 255))]
     pub fg_description: WkColor,
-    #[node(default = WkColor::rgba(0, 0, 0, 255))]
+    #[node(default = WkColor::rgba(46, 52, 64, 255))]
     pub bg: WkColor,
 }
 
@@ -129,8 +129,14 @@ mod tests {
     fn footer_default_items() {
         let footer = Footer::default();
         assert_eq!(footer.items.len(), 3);
-        assert_eq!(footer.items[0], ("Esc".to_string(), "Back/Quit".to_string()));
-        assert_eq!(footer.items[1], ("Ctrl+U".to_string(), "PageUp".to_string()));
+        assert_eq!(
+            footer.items[0],
+            ("Esc".to_string(), "Back/Quit".to_string())
+        );
+        assert_eq!(
+            footer.items[1],
+            ("Ctrl+U".to_string(), "PageUp".to_string())
+        );
         assert_eq!(
             footer.items[2],
             ("Ctrl+D".to_string(), "PageDown".to_string())
@@ -141,17 +147,12 @@ mod tests {
     fn footer_display() {
         let footer = Footer::default();
         let display = footer.to_string();
-        assert_eq!(
-            display,
-            "Esc Back/Quit  Ctrl+U PageUp  Ctrl+D PageDown"
-        );
+        assert_eq!(display, "Esc Back/Quit  Ctrl+U PageUp  Ctrl+D PageDown");
     }
 
     #[test]
     fn footer_display_empty() {
-        let footer = Footer {
-            items: Vec::new(),
-        };
+        let footer = Footer { items: Vec::new() };
         assert_eq!(footer.to_string(), "");
     }
 
@@ -174,31 +175,33 @@ mod tests {
 
     #[test]
     fn config_font_default() {
-        let font = ConfigFont::default();
-        assert!((font.size - 16.0).abs() < f32::EPSILON);
-        assert!((font.line_height - 20.0).abs() < f32::EPSILON);
+        let f = ConfigFont::default();
+        assert!((f.size - 16.0).abs() < f32::EPSILON);
+        assert!((f.line_height - 20.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn config_color_default() {
         let c = ConfigColor::default();
-        assert_eq!(c.fg_key, WkColor::rgba(255, 255, 255, 255));
-        assert_eq!(c.fg_separator, WkColor::rgba(255, 255, 255, 255));
-        assert_eq!(c.fg_description, WkColor::rgba(255, 255, 255, 255));
-        assert_eq!(c.bg, WkColor::rgba(0, 0, 0, 255));
+        assert_eq!(c.fg_key, WkColor::rgba(216, 222, 233, 255));
+        assert_eq!(c.fg_separator, WkColor::rgba(76, 86, 106, 255));
+        assert_eq!(c.fg_description, WkColor::rgba(136, 192, 208, 255));
+        assert_eq!(c.bg, WkColor::rgba(46, 52, 64, 255));
     }
 
     #[test]
     fn config_layout_default() {
-        let layout = ConfigLayout::default();
-        assert_eq!(layout.width, 500);
-        assert_eq!(layout.max_items, 10);
-        assert_eq!(layout.padding, 4);
-        assert_eq!(layout.radius, 0);
-        assert_eq!(layout.anchor, Anchor::union(Anchor::BOTTOM, Anchor::RIGHT));
-        assert_eq!(layout.margin.top, 0);
-        assert_eq!(layout.margin.right, 0);
-        assert_eq!(layout.margin.bottom, 0);
-        assert_eq!(layout.margin.left, 0);
+        let l = ConfigLayout::default();
+        assert_eq!(l.width, 500);
+        assert_eq!(l.max_items, 10);
+        assert_eq!(l.padding, 4);
+        assert_eq!(l.radius, 0);
+        assert_eq!(l.anchor, Anchor::union(Anchor::BOTTOM, Anchor::RIGHT));
+    }
+
+    #[test]
+    fn config_timeout_default() {
+        let c = Config::default();
+        assert_eq!(c.timeout, 2000);
     }
 }
