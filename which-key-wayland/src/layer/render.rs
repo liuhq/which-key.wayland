@@ -20,20 +20,50 @@ impl WkRender {
         if radius == 0 || width == 0 || height == 0 {
             return None;
         }
-        let r = (radius as f32).min(width as f32 / 2.0).min(height as f32 / 2.0);
+        let r = (radius as f32)
+            .min(width as f32 / 2.0)
+            .min(height as f32 / 2.0);
         let w = width as f32;
         let h = height as f32;
 
         let mut pb = PathBuilder::new();
         pb.move_to(r, 0.0);
         pb.line_to(w - r, 0.0);
-        pb.cubic_to(w - r + Self::CORNER_KAPPA * r, 0.0, w, r - Self::CORNER_KAPPA * r, w, r);
+        pb.cubic_to(
+            w - r + Self::CORNER_KAPPA * r,
+            0.0,
+            w,
+            r - Self::CORNER_KAPPA * r,
+            w,
+            r,
+        );
         pb.line_to(w, h - r);
-        pb.cubic_to(w, h - r + Self::CORNER_KAPPA * r, w - r + Self::CORNER_KAPPA * r, h, w - r, h);
+        pb.cubic_to(
+            w,
+            h - r + Self::CORNER_KAPPA * r,
+            w - r + Self::CORNER_KAPPA * r,
+            h,
+            w - r,
+            h,
+        );
         pb.line_to(r, h);
-        pb.cubic_to(r - Self::CORNER_KAPPA * r, h, 0.0, h - r + Self::CORNER_KAPPA * r, 0.0, h - r);
+        pb.cubic_to(
+            r - Self::CORNER_KAPPA * r,
+            h,
+            0.0,
+            h - r + Self::CORNER_KAPPA * r,
+            0.0,
+            h - r,
+        );
         pb.line_to(0.0, r);
-        pb.cubic_to(0.0, r - Self::CORNER_KAPPA * r, r - Self::CORNER_KAPPA * r, 0.0, r, 0.0);
+        pb.cubic_to(
+            0.0,
+            r - Self::CORNER_KAPPA * r,
+            r - Self::CORNER_KAPPA * r,
+            0.0,
+            r,
+            0.0,
+        );
         pb.close();
 
         pb.finish()
@@ -55,7 +85,13 @@ impl WkRender {
             let mut paint = Paint::default();
             paint.set_color(config.color.bg.into());
             paint.anti_alias = true;
-            pixmap.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+            pixmap.fill_path(
+                &path,
+                &paint,
+                FillRule::Winding,
+                Transform::identity(),
+                None,
+            );
         } else {
             pixmap.fill(config.color.bg.into());
         }
@@ -73,42 +109,23 @@ impl WkRender {
 
         // Header
         {
-            match header {
-                None => {
-                    wk_text.set_size(Size::new(usable_w, size.height()).into());
-                    wk_text.set_wrap(Wrap::None);
-                    wk_text.set_text("Which-Key");
-                    Self::inner_draw(
-                        wk_text,
-                        pixmap_data,
-                        Offset::new(config.layout.padding, current_y),
-                        Size::new(usable_w, size.height() - current_y),
-                        stride,
-                        config.color.fg_key.into(),
-                    );
-                    current_y += config.font.line_height as u32;
-                }
-                Some((_, group_desc)) => {
-                    wk_text.set_size(Size::new(usable_w, size.height()).into());
-                    wk_text.set_wrap(Wrap::Word);
-                    wk_text.set_text(group_desc);
-                    Self::inner_draw(
-                        wk_text,
-                        pixmap_data,
-                        Offset::new(config.layout.padding, current_y),
-                        Size::new(usable_w, size.height() - current_y),
-                        stride,
-                        config.color.fg_description.into(),
-                    );
-                    let lines_offset = wk_text.lines_h(group_desc, usable_w);
-                    current_y += lines_offset;
-                }
+            if let Some((_, group_desc)) = header {
+                wk_text.set_size(Size::new(usable_w, size.height()).into());
+                wk_text.set_wrap(Wrap::Word);
+                wk_text.set_text(group_desc);
+                Self::inner_draw(
+                    wk_text,
+                    pixmap_data,
+                    Offset::new(config.layout.padding, current_y),
+                    Size::new(usable_w, size.height() - current_y),
+                    stride,
+                    config.color.fg_description.into(),
+                );
+                let lines_offset = wk_text.lines_h(group_desc, usable_w);
+                current_y += lines_offset;
+                // Separate between header and entries
+                current_y += config.font.line_height.floor() as u32;
             }
-        }
-
-        // Separate between header and entries
-        {
-            current_y += config.font.line_height.floor() as u32;
         }
 
         // Entries
