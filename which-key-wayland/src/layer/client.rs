@@ -413,14 +413,11 @@ impl WhichKey {
             break;
         }
 
-        let line_height = config.font.line_height.ceil() as u32;
+        let separator = config.font.line_height.ceil() as u32;
         let usable_w = config.without_padding(config.layout.width);
-        let header = match last_key_desc {
-            Some(desc) => wk_text.lines_h(desc, usable_w),
-            None => line_height,
-        };
-        let separator = line_height;
-        let mut total_lines = config.with_padding(0) + header + separator;
+        let header = last_key_desc.map_or(0, |d| wk_text.lines_h(d, usable_w));
+        let mut total_lines =
+            config.with_padding(0) + header + if header == 0 { 0 } else { separator };
 
         let entries = map.page(cursor, direction, config.layout.max_items as usize);
         let key_strings: Vec<String> = entries.items.iter().map(|(k, _)| k.to_string()).collect();
