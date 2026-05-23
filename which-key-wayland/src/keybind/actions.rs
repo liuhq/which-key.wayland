@@ -119,7 +119,7 @@ mod tests {
 
     fn parse_kdl_nodes(source: &str) -> Vec<KdlNode> {
         let doc: KdlDocument = source.parse().unwrap();
-        doc.nodes().iter().cloned().collect()
+        doc.nodes().to_vec()
     }
 
     fn first_node(source: &str) -> KdlNode {
