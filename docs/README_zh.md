@@ -1,7 +1,6 @@
 # which-key.wayland
 
-一个用于 Wayland 环境的按键提示面板，灵感来源于 Neovim 插件
-[which-key.nvim](https://github.com/folke/which-key.nvim) 和
+一个 Wayland 环境的按键提示面板，灵感来源于 Neovim 插件 [which-key.nvim](https://github.com/folke/which-key.nvim) 和
 [Helix](https://helix-editor.com/) 编辑器风格。
 
 `which-key.wayland` 可以在支持 `wlr_layer_shell` 协议的 Wayland
@@ -22,7 +21,7 @@ cargo install which-key-wayland
 如果你已安装 Nix 或正在使用 NixOS，可直接运行：
 
 ```sh
-nix run github:horin/which-key.wayland
+nix run github:liuhq/which-key.wayland
 ```
 
 #### NixOS 安装
@@ -32,11 +31,11 @@ nix run github:horin/which-key.wayland
 ```nix
 {
   inputs = {
-    which-key-wayland.url = "github:horin/which-key.wayland";
+    which-key-wayland.url = "github:liuhq/which-key.wayland";
   };
 
-  outputs = { self, nixpkgs, which-key-wayland, ... }: {
-    nixosConfigurations.your-host = nixpkgs.lib.nixosSystem {
+  outputs = { self, nixpkgs, which-key-wayland, ... }@inputs: {
+    nixosConfigurations.<your-host> = nixpkgs.lib.nixosSystem {
       modules = [
         ({ ... }: {
           environment.systemPackages = [
@@ -58,18 +57,18 @@ nix run github:horin/which-key.wayland
 - `pkg-config` (构建工具)
 
 ```sh
-git clone https://github.com/horin/which-key.wayland.git
-
+# clone
+git clone https://github.com/liuhq/which-key.wayland.git
 cd which-key.wayland
-
+# build
 cargo build --release
-
+# run
 ./target/release/which-key-wayland
 ```
 
 ## 使用方式
 
-程序以后台常驻方式运行，通过 D-Bus 会话总线通信。
+程序会在后台常驻运行，通过 D-Bus 会话通信。
 
 ```sh
 which-key-wayland       # 启动程序并显示面板 (若已运行则自动唤起面板)
@@ -77,12 +76,11 @@ which-key-wayland show  # 向运行中的实例发送唤起命令
 which-key-wayland quit  # 退出程序
 ```
 
-推荐在窗口管理器/混成器中绑定快捷键到
-`which-key-wayland`，程序会自动处理首次启动与后续唤起。
+推荐在窗口管理器/混成器中绑定快捷键到 `which-key-wayland`，程序会自动处理首次启动与后续唤起。
 
 示例：
 
-**Niri** (`~/.config/niri/config.kdl`)：
+**Niri** (`$XDG_CONFIG_HOME/niri/config.kdl`)：
 
 ```kdl
 binds {
@@ -90,7 +88,7 @@ binds {
 }
 ```
 
-**Hyprland** (`~/.config/hypr/hyprland.conf`)：
+**Hyprland** (`$XDG_CONFIG_HOME/hypr/hyprland.conf`)：
 
 ```text
 bind = $mainMod, Space, exec, which-key-wayland
@@ -102,12 +100,11 @@ bind = $mainMod, Space, exec, which-key-wayland
 
 ### 优先级
 
-配置文件按以下优先级读取，取先匹配到的：
+配置文件会按以下优先级读取：
 
 1. `$WKW_CONFIG_FILE` 环境变量指定的路径
 2. `$XDG_CONFIG_HOME/which-key-wayland/config.kdl`
-3. `$HOME/.config/which-key-wayland/config.kdl` (`XDG_CONFIG_HOME`
-   未设置时的回退)
+3. `$HOME/.config/which-key-wayland/config.kdl` (`XDG_CONFIG_HOME` 未设置时的回退)
 4. 以上均不存在或解析失败，使用默认值
 
 ### 配置示例
@@ -136,12 +133,13 @@ bind = $mainMod, Space, exec, which-key-wayland
 颜色值支持 `"#RGB"`、`"#RRGGBB"`、`"#RRGGBBAA"` 三种十六进制格式 (`#`
 可选)，末尾两位为透明度 (alpha)，省略时默认不透明。
 
-| 字段             | 类型   | 默认值      | 说明         |
-|------------------|--------|-------------|--------------|
-| `fg-key`         | 字符串 | `"#FFFFFF"` | 按键文字颜色 |
-| `fg-separator`   | 字符串 | `"#FFFFFF"` | 分隔符颜色   |
-| `fg-description` | 字符串 | `"#FFFFFF"` | 描述文字颜色 |
-| `bg`             | 字符串 | `"#000000"` | 背景颜色     |
+| 字段           | 类型   | 默认值      | 说明                  |
+|----------------|--------|-------------|-----------------------|
+| `fg-key`       | 字符串 | `"#D8DEE9"` | 按键文字颜色          |
+| `fg-separator` | 字符串 | `"#4C566A"` | 分隔符颜色            |
+| `fg-action`    | 字符串 | `"#88C0D0"` | `Action` 描述文字颜色 |
+| `fg-group`     | 字符串 | `"#5E81AC"` | `Group` 描述文字颜色  |
+| `bg`           | 字符串 | `"#2E3440"` | 背景颜色              |
 
 #### `layout` 块
 
@@ -176,20 +174,19 @@ bind = $mainMod, Space, exec, which-key-wayland
 | `Ctrl`  | Ctrl 键                          |
 | `Alt`   | Alt 键                           |
 
-##### 绑定层级：
+##### 绑定类型：
 
 - **动作绑定：**
   在按键块内直接定义动作，按下后执行；同一按键块内可包含多个动作，将按书写顺序依次执行
 - **分组绑定：**
-  按键块内包含子按键而非动作，按下后进入子绑定页面；分组描述会自动添加 `+`
-  前缀以标示为分组
+  按键块内包含子按键而非动作 (若包含动作，则忽略动作绑定)，按下后进入子绑定页面；分组描述会自动添加 `+` 前缀以标示为分组
 
 ##### 动作类型：
 
-| 动作                               | 说明                                   |
-|------------------------------------|----------------------------------------|
-| `spawn "程序" "参数1" "参数2" ...` | 启动一个程序 (不通过 shell，直接 exec) |
-| `sh "shell命令"`                   | 通过 `sh -c` 执行 shell 命令           |
+| 动作                               | 说明                         |
+|------------------------------------|------------------------------|
+| `spawn "程序" "参数1" "参数2" ...` | 启动一个程序                 |
+| `sh "shell命令"`                   | 通过 `sh -c` 执行 shell 命令 |
 
 ## 内置导航
 
@@ -201,8 +198,8 @@ bind = $mainMod, Space, exec, which-key-wayland
 | `Ctrl+U` | 向上翻页              |
 | `Ctrl+D` | 向下翻页              |
 
-> **注意：** `Esc`、`Ctrl+U`、`Ctrl+D`
-> 当前为硬编码快捷键，尚不支持通过配置文件修改。
+> [!WARNING]
+> `Esc`、`Ctrl+U`、`Ctrl+D` 当前为硬编码快捷键，尚不支持通过配置文件修改。配置文件中 bind 会跳过这三个键的绑定。
 
 ## D-Bus 接口
 
