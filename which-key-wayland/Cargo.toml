@@ -1,6 +1,6 @@
 [package]
 name = "which-key-wayland"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A key-hint panel for Wayland, inspired by the Neovim plugin which-key.nvim and the Helix editor style."
 keywords = ["which-key", "wayland"]
