@@ -167,8 +167,13 @@ optional). The last two digits represent transparency (alpha); omitted means ful
 
 #### `bind` Block
 
-Key binding configuration. Supports single keys (`A`, `F1`, `Delete`, etc.) and key combinations
-(`Ctrl+C`, `Super+Shift+A`, etc.).
+Key binding configuration. Supports single keys (`a`, `F1`, `Delete`, etc.) and key combinations
+(`Ctrl+C`, `Super+a`, etc.).
+
+> [!NOTE]
+> Keybindings are **case-sensitive**: pressing the `a` key matches `a` in the config, not `A`. For printable
+> single-character keys, the `Shift` modifier is implicit — `Ctrl+c` in the config matches pressing the `c` key while
+> holding `Ctrl`.
 
 ##### Supported Modifiers
 
@@ -201,11 +206,11 @@ The following navigation hints are always shown at the bottom of the panel:
 | Key      | Function              |
 |----------|-----------------------|
 | `Esc`    | go back / close panel |
-| `Ctrl+U` | page up               |
-| `Ctrl+D` | page down             |
+| `Ctrl+u` | page up               |
+| `Ctrl+d` | page down             |
 
 > [!WARNING]
-> `Esc`, `Ctrl+U`, `Ctrl+D` are currently hardcoded and cannot be changed via the configuration file. The config file's
+> `Esc`, `Ctrl+u`, `Ctrl+d` are currently hardcoded and cannot be changed via the configuration file. The config file's
 > bind section skips binding these three keys.
 
 ## D-Bus Interface
