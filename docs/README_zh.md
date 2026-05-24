@@ -162,8 +162,12 @@ bind = $mainMod, Space, exec, which-key-wayland
 
 #### `bind` 块
 
-按键绑定配置。支持单键 (`A`、`F1`、`Delete` 等) 和组合键
-(`Ctrl+C`、`Super+Shift+A` 等)。
+按键绑定配置。支持单键 (`a`、`F1`、`Delete` 等) 和组合键
+(`Ctrl+C`、`Super+a` 等)。
+
+> [!NOTE]
+> 按键绑定**区分大小写**：按下 `a` 键匹配配置中的 `a`，而非 `A`。 对于可打印的单字符键，`Shift` 修饰键是隐式的——配置中的
+> `Ctrl+c` 匹配键盘上按住 `Ctrl` 再按 `c` 键。
 
 ##### 支持的修饰键：
 
@@ -195,11 +199,11 @@ bind = $mainMod, Space, exec, which-key-wayland
 | 按键     | 功能                  |
 |----------|-----------------------|
 | `Esc`    | 返回上一级 / 退出面板 |
-| `Ctrl+U` | 向上翻页              |
-| `Ctrl+D` | 向下翻页              |
+| `Ctrl+u` | 向上翻页              |
+| `Ctrl+d` | 向下翻页              |
 
 > [!WARNING]
-> `Esc`、`Ctrl+U`、`Ctrl+D` 当前为硬编码快捷键，尚不支持通过配置文件修改。配置文件中 bind 会跳过这三个键的绑定。
+> `Esc`、`Ctrl+u`、`Ctrl+d` 当前为硬编码快捷键，尚不支持通过配置文件修改。配置文件中 bind 会跳过这三个键的绑定。
 
 ## D-Bus 接口
 
