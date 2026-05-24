@@ -101,9 +101,9 @@ mod tests {
 
     #[test]
     fn bind_with_modifier_key() {
-        let raw = "bind {\n  Ctrl+W desc=\"Close\" { sh \"echo w\"; }\n}";
+        let raw = "bind {\n  Ctrl+w desc=\"Close\" { sh \"echo w\"; }\n}";
         let map = parse(raw).unwrap();
-        let key: Key = "Ctrl+W".parse().unwrap();
+        let key: Key = "Ctrl+w".parse().unwrap();
         let bind = map.map.get(&key).unwrap();
         assert_eq!(bind.desc, "Close");
     }
