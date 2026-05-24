@@ -34,11 +34,15 @@ impl Key {
 
         Self {
             modifiers,
-            base: Self::title_case(&base),
+            base: if base.chars().count() == 1 {
+                base
+            } else {
+                Self::title_case(&base)
+            },
         }
     }
 
-    fn title_case(s: &str) -> String {
+    pub fn title_case(s: &str) -> String {
         let mut chars = s.chars();
         match chars.next() {
             None => String::new(),
@@ -118,7 +122,7 @@ mod tests {
     #[test]
     fn no_modifiers() {
         let key: Key = "a".parse().unwrap();
-        assert_eq!(key, Key::new(None, "A".to_string()));
+        assert_eq!(key, Key::new(None, "a".to_string()));
     }
 
     #[test]
@@ -160,7 +164,7 @@ mod tests {
     #[test]
     fn single_modifier() {
         let key: Key = "ctrl+c".parse().unwrap();
-        assert_eq!(key, Key::new(Some(vec![Modifier::Ctrl]), "C".to_string()));
+        assert_eq!(key, Key::new(Some(vec![Modifier::Ctrl]), "c".to_string()));
     }
 
     #[test]
