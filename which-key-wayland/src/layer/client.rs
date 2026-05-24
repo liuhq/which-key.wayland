@@ -219,6 +219,7 @@ impl WhichKey {
             while let Ok(cmd) = self.dbus_rx.try_recv() {
                 match cmd {
                     ipc::DBusCommand::Show => {
+                        log::debug!("DBus::Show");
                         if matches!(self.state, AppState::Hidden) {
                             self.show_overlay(&event_queue.handle());
                         } else {
@@ -227,6 +228,7 @@ impl WhichKey {
                         }
                     }
                     ipc::DBusCommand::Quit => {
+                        log::debug!("DBus::Quit");
                         self.state = AppState::Exiting;
                     }
                 }

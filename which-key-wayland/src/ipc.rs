@@ -116,24 +116,36 @@ pub fn start_dbus_server(conn: Connection) -> std::thread::JoinHandle<()> {
     })
 }
 
-pub fn ipc_show() {
+pub fn ipc_show() -> bool {
     let conn = match Connection::session() {
         Ok(c) => c,
         Err(e) => {
             log::error!("Failed to connect to DBus session bus: {e}");
-            return;
+            return false;
         }
     };
-    let _ = conn.call_method(Some(DBUS_NAME), DBUS_PATH, Some(DBUS_NAME), "Show", &());
+    match conn.call_method(Some(DBUS_NAME), DBUS_PATH, Some(DBUS_NAME), "Show", &()) {
+        Ok(_) => true,
+        Err(e) => {
+            log::warn!("D-Bus Show call failed: {e}");
+            false
+        }
+    }
 }
 
-pub fn ipc_quit() {
+pub fn ipc_quit() -> bool {
     let conn = match Connection::session() {
         Ok(c) => c,
         Err(e) => {
             log::error!("Failed to connect to DBus session bus: {e}");
-            return;
+            return false;
         }
     };
-    let _ = conn.call_method(Some(DBUS_NAME), DBUS_PATH, Some(DBUS_NAME), "Quit", &());
+    match conn.call_method(Some(DBUS_NAME), DBUS_PATH, Some(DBUS_NAME), "Quit", &()) {
+        Ok(_) => true,
+        Err(e) => {
+            log::warn!("D-Bus Quit call failed: {e}");
+            false
+        }
+    }
 }

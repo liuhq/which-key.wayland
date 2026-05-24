@@ -13,7 +13,11 @@ fn main() {
             ipc::ipc_quit();
             return;
         }
-        None => {}
+        None => {
+            if ipc::ipc_show() {
+                return;
+            }
+        }
     }
 
     let config = Config::init();
