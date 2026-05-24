@@ -27,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: which-key-wayland-${{ github.ref_name }}
-          path: target/release/which-key-wayland
+          path: target/release/which-key-wayland_${{ github.ref_name }}
           compression-level: 6
           overwrite: true
   release:
