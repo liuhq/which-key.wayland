@@ -23,9 +23,13 @@ fn keysym_to_key_string(keysym: Keysym, modifiers: &Modifiers) -> Option<String>
     }
 
     let utf8 = xkbcommon::xkb::keysym_to_utf8(keysym);
-    let use_utf8 = utf8.chars().count() == 1
-        && utf8.chars().next().is_some_and(|c| c.is_ascii_graphic());
-    let base = if use_utf8 { utf8 } else { Key::title_case(&name) };
+    let use_utf8 =
+        utf8.chars().count() == 1 && utf8.chars().next().is_some_and(|c| c.is_ascii_graphic());
+    let base = if use_utf8 {
+        utf8
+    } else {
+        Key::title_case(&name)
+    };
 
     let mut parts = Vec::new();
     if modifiers.ctrl {
