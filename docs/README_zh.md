@@ -14,6 +14,14 @@
 cargo install which-key-wayland
 ```
 
+### Archlinux (AUR)
+
+AUR 包: [which-key-wayland](https://aur.archlinux.org/packages/which-key-wayland)
+
+```sh
+paru -S which-key-wayland
+```
+
 ### Nix Flake
 
 #### :snowflake: 快速试用

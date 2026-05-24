@@ -18,6 +18,14 @@ allowing you to navigate and execute commands via key sequences.
 cargo install which-key-wayland
 ```
 
+### Archlinux (AUR)
+
+AUR package: [which-key-wayland](https://aur.archlinux.org/packages/which-key-wayland)
+
+```sh
+paru -S which-key-wayland
+```
+
 ### Nix Flake
 
 #### :snowflake: Quick Try
