@@ -28,15 +28,17 @@ layout {
 }
 
 bind {
-  B desc="Open browser" { spawn "google-chrome" "https://www.google.com"; }
-  A desc="Apps" {
-    T desc="Terminal" { spawn "foot" "sh"; }
-    C desc="Calculator" { spawn "gnome-calculator"; }
+  b desc="Open browser" { spawn "google-chrome" "https://www.google.com"; }
+  a desc="Apps" {
+    t desc="Terminal" { spawn "foot" "sh"; }
+    Ctrl+c desc="Calculator" { spawn "gnome-calculator"; }
+    // "N" == "Shift+n"
     N desc="Niri" {
-      W desc="Windows" { sh "foot --hold niri msg windows"; }
-      L desc="Layers" { sh "foot --hold niri msg layers"; }
-      O desc="Outputs" { spawn "foot" "--hold" "niri" "msg" "outputs"; }
+      w desc="Windows" { sh "foot --hold niri msg windows"; }
+      l desc="Layers" { sh "foot --hold niri msg layers"; }
+      o desc="Outputs" { spawn "foot" "--hold" "niri" "msg" "outputs"; }
     }
   }
-  Ctrl+Shift+F desc="File Manager" { spawn "nautilus"; }
+  // "Ctrl+F" == "Ctrl+Shift+f"
+  Ctrl+F desc="File Manager" { spawn "nautilus"; }
 }
