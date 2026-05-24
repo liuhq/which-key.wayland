@@ -16,8 +16,8 @@ impl Default for Footer {
         Self {
             items: vec![
                 ("Esc".to_string(), "Back/Quit".to_string()),
-                ("Ctrl+U".to_string(), "PageUp".to_string()),
-                ("Ctrl+D".to_string(), "PageDown".to_string()),
+                ("Ctrl+u".to_string(), "PageUp".to_string()),
+                ("Ctrl+d".to_string(), "PageDown".to_string()),
             ],
         }
     }
@@ -137,11 +137,11 @@ mod tests {
         );
         assert_eq!(
             footer.items[1],
-            ("Ctrl+U".to_string(), "PageUp".to_string())
+            ("Ctrl+u".to_string(), "PageUp".to_string())
         );
         assert_eq!(
             footer.items[2],
-            ("Ctrl+D".to_string(), "PageDown".to_string())
+            ("Ctrl+d".to_string(), "PageDown".to_string())
         );
     }
 
@@ -149,7 +149,7 @@ mod tests {
     fn footer_display() {
         let footer = Footer::default();
         let display = footer.to_string();
-        assert_eq!(display, "Esc Back/Quit  Ctrl+U PageUp  Ctrl+D PageDown");
+        assert_eq!(display, "Esc Back/Quit  Ctrl+u PageUp  Ctrl+d PageDown");
     }
 
     #[test]
