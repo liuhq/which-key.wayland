@@ -18,29 +18,31 @@ use crate::{
 
 fn keysym_to_key_string(keysym: Keysym, modifiers: &Modifiers) -> Option<String> {
     let name = xkbcommon::xkb::keysym_get_name(keysym);
-
-    if name.len() == 1 && name.as_bytes()[0].is_ascii_alphabetic() {
-        let base = name.to_ascii_uppercase();
-
-        let mut parts = Vec::new();
-        if modifiers.ctrl {
-            parts.push("Ctrl");
-        }
-        if modifiers.alt {
-            parts.push("Alt");
-        }
-        if modifiers.logo {
-            parts.push("Super");
-        }
-        if modifiers.shift {
-            parts.push("Shift");
-        }
-        parts.sort();
-        parts.push(&base);
-        Some(parts.join("+"))
-    } else {
-        None
+    if name.is_empty() {
+        return None;
     }
+
+    let utf8 = xkbcommon::xkb::keysym_to_utf8(keysym);
+    let use_utf8 = utf8.chars().count() == 1
+        && utf8.chars().next().is_some_and(|c| c.is_ascii_graphic());
+    let base = if use_utf8 { utf8 } else { Key::title_case(&name) };
+
+    let mut parts = Vec::new();
+    if modifiers.ctrl {
+        parts.push("Ctrl");
+    }
+    if modifiers.alt {
+        parts.push("Alt");
+    }
+    if modifiers.logo {
+        parts.push("Super");
+    }
+    if modifiers.shift && !use_utf8 {
+        parts.push("Shift");
+    }
+    parts.sort();
+    parts.push(&base);
+    Some(parts.join("+"))
 }
 
 impl KeyboardHandler for WhichKey {
@@ -214,7 +216,7 @@ mod tests {
     #[test]
     fn alpha_key_no_modifiers() {
         let result = keysym_to_key_string(ks("a"), &mods(false, false, false, false));
-        assert_eq!(result, Some("A".to_string()));
+        assert_eq!(result, Some("a".to_string()));
     }
 
     #[test]
@@ -226,44 +228,192 @@ mod tests {
     #[test]
     fn alpha_key_with_ctrl() {
         let result = keysym_to_key_string(ks("c"), &mods(true, false, false, false));
-        assert_eq!(result, Some("Ctrl+C".to_string()));
+        assert_eq!(result, Some("Ctrl+c".to_string()));
     }
 
     #[test]
     fn alpha_key_with_shift() {
         let result = keysym_to_key_string(ks("x"), &mods(false, true, false, false));
-        assert_eq!(result, Some("Shift+X".to_string()));
+        assert_eq!(result, Some("x".to_string()));
     }
 
     #[test]
     fn alpha_key_with_alt() {
         let result = keysym_to_key_string(ks("m"), &mods(false, false, true, false));
-        assert_eq!(result, Some("Alt+M".to_string()));
+        assert_eq!(result, Some("Alt+m".to_string()));
     }
 
     #[test]
     fn alpha_key_with_super() {
         let result = keysym_to_key_string(ks("r"), &mods(false, false, false, true));
-        assert_eq!(result, Some("Super+R".to_string()));
+        assert_eq!(result, Some("Super+r".to_string()));
     }
 
     #[test]
     fn alpha_key_with_all_modifiers_sorted() {
         let result = keysym_to_key_string(ks("q"), &mods(true, true, true, true));
-        assert_eq!(result, Some("Alt+Ctrl+Shift+Super+Q".to_string()));
+        assert_eq!(result, Some("Alt+Ctrl+Super+q".to_string()));
     }
 
     #[test]
-    fn non_alpha_keysym_returns_none() {
-        assert!(keysym_to_key_string(ks("Escape"), &mods(false, false, false, false)).is_none());
-        assert!(keysym_to_key_string(ks("Return"), &mods(false, false, false, false)).is_none());
-        assert!(keysym_to_key_string(ks("F1"), &mods(false, false, false, false)).is_none());
-        assert!(keysym_to_key_string(ks("1"), &mods(false, false, false, false)).is_none());
-        assert!(keysym_to_key_string(ks("Tab"), &mods(false, false, false, false)).is_none());
+    fn function_key() {
+        let result = keysym_to_key_string(ks("F1"), &mods(false, false, false, false));
+        assert_eq!(result, Some("F1".to_string()));
     }
 
     #[test]
-    fn non_alpha_with_modifiers_still_returns_none() {
-        assert!(keysym_to_key_string(ks("Escape"), &mods(true, false, false, false)).is_none());
+    fn function_key_with_modifier() {
+        let result = keysym_to_key_string(ks("F12"), &mods(true, false, false, false));
+        assert_eq!(result, Some("Ctrl+F12".to_string()));
+    }
+
+    #[test]
+    fn escape_key() {
+        let result = keysym_to_key_string(ks("Escape"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Escape".to_string()));
+    }
+
+    #[test]
+    fn escape_with_modifier() {
+        let result = keysym_to_key_string(ks("Escape"), &mods(true, false, false, false));
+        assert_eq!(result, Some("Ctrl+Escape".to_string()));
+    }
+
+    #[test]
+    fn return_key() {
+        let result = keysym_to_key_string(ks("Return"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Return".to_string()));
+    }
+
+    #[test]
+    fn tab_key() {
+        let result = keysym_to_key_string(ks("Tab"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Tab".to_string()));
+    }
+
+    #[test]
+    fn space_key_title_cased() {
+        let result = keysym_to_key_string(ks("space"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Space".to_string()));
+    }
+
+    #[test]
+    fn digit_key() {
+        let result = keysym_to_key_string(ks("1"), &mods(false, false, false, false));
+        assert_eq!(result, Some("1".to_string()));
+    }
+
+    #[test]
+    fn digit_key_with_modifier() {
+        let result = keysym_to_key_string(ks("7"), &mods(true, false, false, true));
+        assert_eq!(result, Some("Ctrl+Super+7".to_string()));
+    }
+
+    #[test]
+    fn delete_key() {
+        let result = keysym_to_key_string(ks("Delete"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Delete".to_string()));
+    }
+
+    #[test]
+    fn backspace_key_title_cased() {
+        let result = keysym_to_key_string(ks("BackSpace"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Backspace".to_string()));
+    }
+
+    #[test]
+    fn arrow_key() {
+        let result = keysym_to_key_string(ks("Up"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Up".to_string()));
+    }
+
+    #[test]
+    fn home_key() {
+        let result = keysym_to_key_string(ks("Home"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Home".to_string()));
+    }
+
+    #[test]
+    fn semicolon_symbol() {
+        let result = keysym_to_key_string(ks("semicolon"), &mods(false, false, false, false));
+        assert_eq!(result, Some(";".to_string()));
+    }
+
+    #[test]
+    fn semicolon_with_shift() {
+        let result = keysym_to_key_string(ks("semicolon"), &mods(false, true, false, false));
+        assert_eq!(result, Some(";".to_string()));
+    }
+
+    #[test]
+    fn grave_backtick() {
+        let result = keysym_to_key_string(ks("grave"), &mods(false, false, false, false));
+        assert_eq!(result, Some("`".to_string()));
+    }
+
+    #[test]
+    fn comma_symbol() {
+        let result = keysym_to_key_string(ks("comma"), &mods(false, false, false, false));
+        assert_eq!(result, Some(",".to_string()));
+    }
+
+    #[test]
+    fn period_symbol() {
+        let result = keysym_to_key_string(ks("period"), &mods(false, false, false, false));
+        assert_eq!(result, Some(".".to_string()));
+    }
+
+    #[test]
+    fn exclam_symbol() {
+        let result = keysym_to_key_string(ks("exclam"), &mods(false, false, false, false));
+        assert_eq!(result, Some("!".to_string()));
+    }
+
+    #[test]
+    fn exclam_with_shift() {
+        let result = keysym_to_key_string(ks("exclam"), &mods(false, true, false, false));
+        assert_eq!(result, Some("!".to_string()));
+    }
+
+    #[test]
+    fn space_unchanged() {
+        let result = keysym_to_key_string(ks("space"), &mods(false, false, false, false));
+        assert_eq!(result, Some("Space".to_string()));
+    }
+
+    #[test]
+    fn shift_delete() {
+        let result = keysym_to_key_string(ks("Delete"), &mods(false, true, false, false));
+        assert_eq!(result, Some("Shift+Delete".to_string()));
+    }
+
+    #[test]
+    fn shift_f1() {
+        let result = keysym_to_key_string(ks("F1"), &mods(false, true, false, false));
+        assert_eq!(result, Some("Shift+F1".to_string()));
+    }
+
+    #[test]
+    fn shift_home() {
+        let result = keysym_to_key_string(ks("Home"), &mods(false, true, false, false));
+        assert_eq!(result, Some("Shift+Home".to_string()));
+    }
+
+    #[test]
+    fn uppercase_keysym_with_shift() {
+        let result = keysym_to_key_string(ks("A"), &mods(false, true, false, false));
+        assert_eq!(result, Some("A".to_string()));
+    }
+
+    #[test]
+    fn uppercase_keysym_with_ctrl() {
+        let result = keysym_to_key_string(ks("C"), &mods(true, false, false, false));
+        assert_eq!(result, Some("Ctrl+C".to_string()));
+    }
+
+    #[test]
+    fn uppercase_keysym_with_ctrl_and_shift() {
+        let result = keysym_to_key_string(ks("C"), &mods(true, true, false, false));
+        assert_eq!(result, Some("Ctrl+C".to_string()));
     }
 }
