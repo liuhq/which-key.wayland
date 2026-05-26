@@ -1,6 +1,7 @@
 mod bind;
 mod define;
 pub mod parser;
+pub mod reloader;
 
 use std::{env, path::PathBuf};
 
