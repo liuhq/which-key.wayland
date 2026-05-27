@@ -13,6 +13,13 @@ pub enum ConfigReloader {
 }
 
 impl ConfigReloader {
+    pub fn init_mtime(path: PathBuf) -> Self {
+        let last_mtime = std::fs::metadata(&path)
+            .ok()
+            .and_then(|m| m.modified().ok());
+        ConfigReloader::Mtime { path, last_mtime }
+    }
+
     pub fn has_changed(&mut self) -> bool {
         match self {
             ConfigReloader::Mtime { path, last_mtime } => {
@@ -33,11 +40,7 @@ impl ConfigReloader {
                     false
                 }
             }
-            ConfigReloader::Inotify {
-                inotify_fd,
-                wd,
-                buffer,
-            } => false,
+            ConfigReloader::Inotify { .. } => false,
         }
     }
 }
