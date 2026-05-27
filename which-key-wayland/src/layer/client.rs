@@ -1,4 +1,5 @@
 use std::os::fd::{AsFd, OwnedFd};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
@@ -31,6 +32,7 @@ pub mod registry;
 pub mod seat;
 pub mod shm;
 
+use crate::config::reloader::ConfigReloader;
 use crate::config::{Footer, SYMBOL_INDICATOR};
 use crate::{
     config::Config,
@@ -61,7 +63,9 @@ pub struct WhichKey {
 
     pub state: AppState,
     pub first_configure: bool,
+    pub timeout: Duration,
     pub config: Rc<Config>,
+    pub config_reloader: Option<ConfigReloader>,
     pub wk_text: WkText,
     pub next_cursor: Option<usize>,
     pub prev_cursor: Option<usize>,
@@ -76,6 +80,7 @@ pub struct WhichKey {
 impl WhichKey {
     pub fn new(
         config: Config,
+        config_path: Option<PathBuf>,
         dbus_rx: mpsc::Receiver<ipc::DBusCommand>,
         wake_fd: OwnedFd,
     ) -> (Self, EventQueue<Self>) {
@@ -92,13 +97,8 @@ impl WhichKey {
         let shm = Shm::bind(&globals, &qh).expect("wl_shm not available");
 
         let surface = compositor.create_surface(&qh);
-        let layer = layer_shell.create_layer_surface(
-            &qh,
-            surface,
-            Layer::Overlay,
-            Some("simple_layer"),
-            None,
-        );
+        let layer =
+            layer_shell.create_layer_surface(&qh, surface, Layer::Overlay, Some("wk_layer"), None);
 
         layer.set_anchor(config.layout.anchor);
         layer.set_margin(
@@ -130,7 +130,9 @@ impl WhichKey {
 
                 state: AppState::Showing,
                 first_configure: true,
+                timeout: Duration::from_millis(config.timeout as u64),
                 config: Rc::new(config),
+                config_reloader: config_path.map(ConfigReloader::init_mtime),
                 wk_text,
                 next_cursor: None,
                 prev_cursor: None,
@@ -166,6 +168,20 @@ impl WhichKey {
             self.hide_overlay();
         }
 
+        if let Some(cr) = &mut self.config_reloader
+            && cr.has_changed()
+        {
+            match cr {
+                ConfigReloader::Mtime { path, .. } => {
+                    log::debug!("check mtime -> config changed");
+                    let new_config = Config::load(path);
+                    self.timeout = Duration::from_millis(new_config.timeout as u64);
+                    self.config = Rc::new(new_config);
+                }
+                ConfigReloader::Inotify { .. } => todo!(),
+            }
+        }
+
         let height = Self::calc_h(
             &self.config,
             &mut self.wk_text,
@@ -179,7 +195,7 @@ impl WhichKey {
             qh,
             surface,
             Layer::Overlay,
-            Some("simple_layer"),
+            Some("wk_layer"),
             None,
         );
 
@@ -211,8 +227,6 @@ impl WhichKey {
     }
 
     pub fn run(&mut self, event_queue: &mut EventQueue<Self>) {
-        let timeout = Duration::from_millis(self.config.timeout as u64);
-
         loop {
             event_queue.dispatch_pending(self).unwrap();
 
@@ -240,9 +254,9 @@ impl WhichKey {
                     break;
                 }
                 AppState::Showing => {
-                    if timeout > Duration::ZERO
+                    if self.timeout > Duration::ZERO
                         && let Some(last) = self.last_key_time
-                        && last.elapsed() >= timeout
+                        && last.elapsed() >= self.timeout
                     {
                         self.hide_overlay();
                     }
@@ -251,8 +265,8 @@ impl WhichKey {
             }
 
             let poll_dur = match (self.state, self.last_key_time) {
-                (AppState::Showing, Some(last)) if timeout > Duration::ZERO => {
-                    timeout.checked_sub(last.elapsed())
+                (AppState::Showing, Some(last)) if self.timeout > Duration::ZERO => {
+                    self.timeout.checked_sub(last.elapsed())
                 }
                 _ => None,
             };
