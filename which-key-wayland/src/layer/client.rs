@@ -168,18 +168,11 @@ impl WhichKey {
             self.hide_overlay();
         }
 
-        if let Some(cr) = &mut self.config_reloader
-            && cr.has_changed()
+        if let Some(cr @ ConfigReloader::Mtime { .. }) = &mut self.config_reloader
+            && cr.has_changed_by_mtime()
         {
-            match cr {
-                ConfigReloader::Mtime { path, .. } => {
-                    log::debug!("check mtime -> config changed");
-                    let new_config = Config::load(path);
-                    self.timeout = Duration::from_millis(new_config.timeout as u64);
-                    self.config = Rc::new(new_config);
-                }
-                ConfigReloader::Inotify { .. } => todo!(),
-            }
+            log::debug!("check mtime -> config changed");
+            self.reload_config();
         }
 
         let height = Self::calc_h(
@@ -245,6 +238,14 @@ impl WhichKey {
                         log::debug!("DBus::Quit");
                         self.state = AppState::Exiting;
                     }
+                    ipc::DBusCommand::Reload => {
+                        log::debug!("DBus::Reload");
+                        if let Some(cr @ ConfigReloader::Mtime { .. }) = &mut self.config_reloader {
+                            let mtime = cr.try_read_mtime();
+                            cr.sync_mtime(mtime);
+                        }
+                        self.reload_config();
+                    }
                 }
             }
 
@@ -297,6 +298,20 @@ impl WhichKey {
                     let _ = rustix::io::read(&self.wake_fd, &mut buf);
                 }
             }
+        }
+    }
+
+    fn reload_config(&mut self) {
+        let Some(cr) = &mut self.config_reloader else {
+            return;
+        };
+        match cr {
+            ConfigReloader::Mtime { path, .. } => {
+                let new_config = Config::load(path);
+                self.timeout = Duration::from_millis(new_config.timeout as u64);
+                self.config = Rc::new(new_config);
+            }
+            ConfigReloader::Inotify { .. } => todo!(),
         }
     }
 

@@ -20,27 +20,32 @@ impl ConfigReloader {
         ConfigReloader::Mtime { path, last_mtime }
     }
 
-    pub fn has_changed(&mut self) -> bool {
-        match self {
-            ConfigReloader::Mtime { path, last_mtime } => {
-                let Ok(meta) = std::fs::metadata(path) else {
-                    return false;
-                };
+    pub fn try_read_mtime(&self) -> Option<SystemTime> {
+        let ConfigReloader::Mtime { path, .. } = self else {
+            return None;
+        };
 
-                let Ok(mtime) = meta.modified() else {
-                    return false;
-                };
+        std::fs::metadata(path).ok().and_then(|m| m.modified().ok())
+    }
 
-                let mtime = Some(mtime);
+    pub fn sync_mtime(&mut self, mtime: Option<SystemTime>) {
+        let ConfigReloader::Mtime { last_mtime, .. } = self else {
+            return;
+        };
 
-                if mtime != *last_mtime {
-                    *last_mtime = mtime;
-                    true
-                } else {
-                    false
-                }
-            }
-            ConfigReloader::Inotify { .. } => false,
+        if mtime != *last_mtime {
+            *last_mtime = mtime;
+        }
+    }
+
+    pub fn has_changed_by_mtime(&mut self) -> bool {
+        let mtime = self.try_read_mtime();
+
+        if mtime.is_some() {
+            self.sync_mtime(mtime);
+            true
+        } else {
+            false
         }
     }
 }
