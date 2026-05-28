@@ -11,6 +11,7 @@ pub const DBUS_PATH: &str = "/com/hrtius/WhichKey";
 pub enum DBusCommand {
     Show,
     Quit,
+    Reload,
 }
 
 struct WhichKeyIface {
@@ -27,6 +28,11 @@ impl WhichKeyIface {
 
     fn quit(&self) -> zbus::fdo::Result<()> {
         self.send(DBusCommand::Quit);
+        Ok(())
+    }
+
+    fn reload(&self) -> zbus::fdo::Result<()> {
+        self.send(DBusCommand::Reload);
         Ok(())
     }
 }
@@ -145,6 +151,23 @@ pub fn ipc_quit() -> bool {
         Ok(_) => true,
         Err(e) => {
             log::warn!("D-Bus Quit call failed: {e}");
+            false
+        }
+    }
+}
+
+pub fn ipc_reload() -> bool {
+    let conn = match Connection::session() {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("Failed to connect to DBus session bus: {e}");
+            return false;
+        }
+    };
+    match conn.call_method(Some(DBUS_NAME), DBUS_PATH, Some(DBUS_NAME), "Reload", &()) {
+        Ok(_) => true,
+        Err(e) => {
+            log::warn!("D-Bus Reload call failed: {e}");
             false
         }
     }

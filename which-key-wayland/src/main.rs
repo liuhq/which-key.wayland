@@ -13,6 +13,10 @@ fn main() {
             ipc::ipc_quit();
             return;
         }
+        Some(SubCommand::Reload) => {
+            ipc::ipc_reload();
+            return;
+        }
         None => {
             if ipc::ipc_show() {
                 return;

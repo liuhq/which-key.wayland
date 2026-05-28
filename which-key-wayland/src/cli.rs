@@ -4,6 +4,8 @@ use clap::{Parser, Subcommand};
 pub enum SubCommand {
     Show,
     Quit,
+    /// Force reload configuration file
+    Reload,
 }
 
 #[derive(Parser, Debug)]
@@ -34,6 +36,12 @@ mod tests {
     fn parse_quit_subcommand() {
         let cli = Cli::try_parse_from(["which-key-wayland", "quit"]).unwrap();
         assert_eq!(cli.command, Some(SubCommand::Quit));
+    }
+
+    #[test]
+    fn parse_reload_subcommand() {
+        let cli = Cli::try_parse_from(["which-key-wayland", "reload"]).unwrap();
+        assert_eq!(cli.command, Some(SubCommand::Reload));
     }
 
     #[test]
