@@ -83,6 +83,7 @@ impl WkRender {
         if let Some(path) =
             Self::rounded_rect_path(size.width(), size.height(), config.layout.radius)
         {
+            pixmap.fill(tiny_skia::Color::TRANSPARENT);
             let mut paint = Paint::default();
             paint.set_color(color.bg.into());
             paint.anti_alias = true;
