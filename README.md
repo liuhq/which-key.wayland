@@ -1,9 +1,5 @@
 # which-key.wayland
 
-[[中文](docs/README_zh.md)]
-
----
-
 A key-hint panel for Wayland, inspired by the Neovim plugin [which-key.nvim](https://github.com/folke/which-key.nvim)
 and the [Helix](https://helix-editor.com/) editor style.
 
@@ -11,12 +7,6 @@ and the [Helix](https://helix-editor.com/) editor style.
 allowing you to navigate and execute commands via key sequences.
 
 ## Installation
-
-### Cargo
-
-```sh
-cargo install which-key-wayland
-```
 
 ### Archlinux (AUR)
 
@@ -60,6 +50,17 @@ Add it to your `flake.nix`:
 }
 ```
 
+### Cargo
+
+Requirements:
+
+- `libxkbcommon`, `wayland` (runtime and build dependencies)
+- `pkg-config` (build tool)
+
+```sh
+cargo install which-key-wayland
+```
+
 ### Build from Source
 
 Build requirements:
@@ -83,9 +84,10 @@ cargo build --release
 The program runs as a background daemon, communicating over the D-Bus session bus.
 
 ```sh
-which-key-wayland       # start the program and show the panel (wakes up if already running)
-which-key-wayland show  # send show command to the running instance
-which-key-wayland quit  # quit the program
+which-key-wayland         # start the daemon and show the panel (wakes up if already running)
+which-key-wayland show    # send show command to the running instance
+which-key-wayland reload  # force reload the configuration file
+which-key-wayland quit    # quit the daemon
 ```
 
 It is recommended to bind a hotkey to `which-key-wayland` in your window manager/compositor. The program automatically
@@ -207,6 +209,20 @@ Key binding configuration. Supports single keys (`a`, `F1`, `Delete`, etc.) and 
 | `spawn "program" "arg1" "arg2" ...` | Launch a program                    |
 | `sh "shell command"`                | Execute a shell command via `sh -c` |
 
+### Hot Reload
+
+The daemon watches the configuration file for changes using mtime. When you invoke `which-key-wayland` (without a
+subcommand), it checks whether the configuration file has been modified since the last load and automatically reloads it
+before showing the panel.
+
+You can also force a reload of the configuration without showing the panel:
+
+```sh
+which-key-wayland reload
+```
+
+This sends a `Reload` command over D-Bus to the running daemon.
+
 ## Built-in Navigation
 
 The following navigation hints are always shown at the bottom of the panel:
@@ -228,10 +244,11 @@ The program communicates over the D-Bus session bus:
 - **Interface name:** `com.hrtius.WhichKey`
 - **Object path:** `/com/hrtius/WhichKey`
 
-| Method | Description          |
-|--------|----------------------|
-| `Show` | show/redraw panel    |
-| `Quit` | quit the daemon      |
+| Method   | Description          |
+|----------|----------------------|
+| `Show`   | show/redraw panel    |
+| `Reload` | reload configuration |
+| `Quit`   | quit the daemon      |
 
 ## License
 

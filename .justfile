@@ -21,5 +21,13 @@ test-debug:
 test-release:
   cargo test --release
 
+[group('Document')]
+doc-lint:
+  rumdl check
+
+[group('Document')]
+doc-fix:
+  rumdl check --fix
+
 tag:
   git tag $(cargo pkgid which-key-wayland | sed 's/.*#//')
