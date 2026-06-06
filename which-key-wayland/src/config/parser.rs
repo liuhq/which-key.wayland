@@ -45,7 +45,7 @@ mod tests {
         let raw = include_str!("../../../examples/config.kdl");
         let c = config_parse(raw).expect("should parse example config");
 
-        assert_eq!(c.timeout, 0);
+        assert_eq!(c.timeout, 2000);
         assert!((c.font.size - 16.0).abs() < f32::EPSILON);
         assert!((c.font.line_height - 20.0).abs() < f32::EPSILON);
         assert_eq!(c.color.fg_key, WkColor::from_hex("#D8DEE9").unwrap());
@@ -55,15 +55,15 @@ mod tests {
         assert_eq!(c.color.bg, WkColor::from_hex("#2E3440").unwrap());
         assert_eq!(c.layout.width, 500);
         assert_eq!(c.layout.max_items, 10);
-        assert_eq!(c.layout.padding, 8);
-        assert_eq!(c.layout.radius, 8);
+        assert_eq!(c.layout.padding, 4);
+        assert_eq!(c.layout.radius, 0);
         assert_eq!(
             c.layout.anchor,
             Anchor::union(Anchor::BOTTOM, Anchor::RIGHT),
         );
         assert_eq!(c.layout.margin.top, 0);
-        assert_eq!(c.layout.margin.right, 4);
-        assert_eq!(c.layout.margin.bottom, 4);
+        assert_eq!(c.layout.margin.right, 0);
+        assert_eq!(c.layout.margin.bottom, 0);
         assert_eq!(c.layout.margin.left, 0);
     }
 }
