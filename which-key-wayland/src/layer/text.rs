@@ -8,7 +8,6 @@ pub struct WkText {
     pub font_system: FontSystem,
     pub swash_cache: SwashCache,
     pub buffer: Buffer,
-    metrics: Metrics,
     attrs: AttrsOwned,
 }
 
@@ -25,8 +24,12 @@ impl WkText {
             swash_cache,
             buffer,
             attrs,
-            metrics,
         }
+    }
+
+    pub fn set_metrics(&mut self, font_size: f32, line_height: f32) {
+        let metrics = Metrics::new(font_size, line_height);
+        self.buffer.set_metrics(metrics);
     }
 
     pub fn set_size(&mut self, size: Size<f32>) {
@@ -59,11 +62,12 @@ impl WkText {
 
 impl WkText {
     pub fn max_width(&mut self, text: Vec<&str>) -> u32 {
+        let metrics = self.buffer.metrics();
         let mut buffer = self.buffer.borrow_with(&mut self.font_system);
         let attrs = self.attrs.as_attrs();
         let mut max_w: f32 = 0.0;
         {
-            buffer.set_size(Some(f32::MAX), Some(self.metrics.line_height));
+            buffer.set_size(Some(f32::MAX), Some(metrics.line_height));
             buffer.set_wrap(Wrap::None);
 
             for t in text {
