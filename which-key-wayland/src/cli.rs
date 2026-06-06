@@ -2,14 +2,17 @@ use clap::{Parser, Subcommand};
 
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum SubCommand {
+    /// Show which-key pannel
     Show,
+    /// Quit which-key-wayland
     Quit,
     /// Force reload configuration file
     Reload,
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "which-key-wayland")]
+#[command(name = "which-key-wayland", version)]
+/// A key-hint panel for Wayland, inspired by the Neovim plugin which-key.nvim and the Helix editor style.
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<SubCommand>,
