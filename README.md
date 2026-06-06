@@ -122,7 +122,7 @@ Configuration files are read in the following order of priority:
 3. `$HOME/.config/which-key-wayland/config.kdl` (fallback when `XDG_CONFIG_HOME` is not set)
 4. If none of the above exist or parsing fails, defaults are used
 
-### Configuration Example
+### Configuration Example (and default values)
 
 See [`examples/config.kdl`](./examples/config.kdl).
 

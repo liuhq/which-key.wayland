@@ -1,4 +1,4 @@
-timeout 0 // ms, or `0` to disable `timeout`
+timeout 2000 // ms, or `0` to disable `timeout`
 
 font {
   size 16.0
@@ -16,17 +16,20 @@ color {
 layout {
   width 500
   max-items 10
-  padding 8
-  radius 8
+  padding 4
+  radius 0
   anchor 2 // 1:tr | 2:br | 3:bl | 4:tl
   margin {
     top 0
-    right 4
-    bottom 4
+    right 0
+    bottom 0
     left 0
   }
 }
 
+// Default:
+//
+// bind { }
 bind {
   b desc="Open browser" { spawn "google-chrome" "https://www.google.com"; }
   a desc="Apps" {
