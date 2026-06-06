@@ -309,6 +309,8 @@ impl WhichKey {
             ConfigReloader::Mtime { path, .. } => {
                 let new_config = Config::load(path);
                 self.timeout = Duration::from_millis(new_config.timeout as u64);
+                self.wk_text
+                    .set_metrics(new_config.font.size, new_config.font.line_height);
                 self.config = Rc::new(new_config);
             }
             ConfigReloader::Inotify { .. } => todo!(),
