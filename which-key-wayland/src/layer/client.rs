@@ -132,7 +132,7 @@ impl WhichKey {
                 first_configure: true,
                 timeout: Duration::from_millis(config.timeout as u64),
                 config: Rc::new(config),
-                config_reloader: config_path.map(ConfigReloader::init_mtime),
+                config_reloader: config_path.map(ConfigReloader::init),
                 wk_text,
                 next_cursor: None,
                 prev_cursor: None,
@@ -277,18 +277,33 @@ impl WhichKey {
                 let wayland_fd = guard.connection_fd();
                 let wake_borrowed = self.wake_fd.as_fd();
 
-                let dbus_woken;
+                let (dbus_woken, inotify_woken);
                 {
-                    let mut fds = [
+                    let mut fds = vec![
                         rustix::event::PollFd::new(
                             &wayland_fd,
                             rustix::event::PollFlags::IN | rustix::event::PollFlags::ERR,
                         ),
                         rustix::event::PollFd::new(&wake_borrowed, rustix::event::PollFlags::IN),
                     ];
+                    let inotify_fd = self
+                        .config_reloader
+                        .as_ref()
+                        .and_then(ConfigReloader::inotify_fd);
+                    if let Some(fd) = &inotify_fd {
+                        fds.push(rustix::event::PollFd::new(
+                            fd,
+                            rustix::event::PollFlags::IN | rustix::event::PollFlags::ERR,
+                        ));
+                    }
                     let ts = poll_dur.and_then(|d| rustix::event::Timespec::try_from(d).ok());
                     let _ = rustix::event::poll(&mut fds, ts.as_ref());
                     dbus_woken = fds[1].revents().contains(rustix::event::PollFlags::IN);
+                    inotify_woken = fds.get(2).is_some_and(|fd| {
+                        fd.revents().intersects(
+                            rustix::event::PollFlags::IN | rustix::event::PollFlags::ERR,
+                        )
+                    });
                 }
 
                 let _ = guard.read();
@@ -297,24 +312,33 @@ impl WhichKey {
                     let mut buf = [0u8; 8];
                     let _ = rustix::io::read(&self.wake_fd, &mut buf);
                 }
+
+                if inotify_woken
+                    && self
+                        .config_reloader
+                        .as_mut()
+                        .is_some_and(ConfigReloader::consume_inotify_events)
+                {
+                    log::debug!("inotify -> config changed");
+                    self.reload_config();
+                }
             }
         }
     }
 
     fn reload_config(&mut self) {
-        let Some(cr) = &mut self.config_reloader else {
+        let Some(path) = self
+            .config_reloader
+            .as_ref()
+            .map(|reloader| reloader.path().to_path_buf())
+        else {
             return;
         };
-        match cr {
-            ConfigReloader::Mtime { path, .. } => {
-                let new_config = Config::load(path);
-                self.timeout = Duration::from_millis(new_config.timeout as u64);
-                self.wk_text
-                    .set_metrics(new_config.font.size, new_config.font.line_height);
-                self.config = Rc::new(new_config);
-            }
-            ConfigReloader::Inotify { .. } => todo!(),
-        }
+        let new_config = Config::load(&path);
+        self.timeout = Duration::from_millis(new_config.timeout as u64);
+        self.wk_text
+            .set_metrics(new_config.font.size, new_config.font.line_height);
+        self.config = Rc::new(new_config);
     }
 
     pub fn current_bind_map(&self) -> &KeyBindMap {

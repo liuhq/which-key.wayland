@@ -211,9 +211,8 @@ Key binding configuration. Supports single keys (`a`, `F1`, `Delete`, etc.) and 
 
 ### Hot Reload
 
-The daemon watches the configuration file for changes using mtime. When you invoke `which-key-wayland` (without a
-subcommand), it checks whether the configuration file has been modified since the last load and automatically reloads it
-before showing the panel.
+The daemon watches the configuration file's directory with inotify and immediately reloads completed writes and atomic
+file replacements. If inotify cannot be initialized, it falls back to checking the file's mtime before showing the panel.
 
 You can also force a reload of the configuration without showing the panel:
 
