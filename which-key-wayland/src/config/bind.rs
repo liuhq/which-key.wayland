@@ -118,6 +118,12 @@ mod tests {
         let bind_a = map.map.get(&key_a).unwrap();
         assert!(bind_a.desc.starts_with(SYMBOL_GROUP));
         assert!(bind_a.desc.ends_with("Apps"));
+        let BindKind::Group(children) = &bind_a.bind else {
+            panic!("expected nested group");
+        };
+        let child = children.map.get(&"T".parse().unwrap()).unwrap();
+        assert_eq!(child.desc, "Terminal");
+        assert!(matches!(child.bind, BindKind::Action(_)));
     }
 
     #[test]

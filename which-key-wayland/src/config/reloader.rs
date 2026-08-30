@@ -210,6 +210,48 @@ mod tests {
     }
 
     #[test]
+    fn mtime_detects_file_created_after_initialization() {
+        let dir = unique_dir("mtime-create");
+        let path = dir.join("config.kdl");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir(&dir).unwrap();
+        let mut cr = ConfigReloader::init_mtime(path.clone());
+
+        fs::write(&path, "timeout 1000").unwrap();
+
+        assert!(cr.has_changed_by_mtime());
+        assert!(!cr.has_changed_by_mtime());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn sync_mtime_suppresses_an_already_observed_change() {
+        let dir = unique_dir("mtime-sync");
+        let path = dir.join("config.kdl");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir(&dir).unwrap();
+        fs::write(&path, "timeout 1000").unwrap();
+        let mut cr = ConfigReloader::init_mtime(path.clone());
+        thread::sleep(Duration::from_millis(10));
+        fs::write(&path, "timeout 2000").unwrap();
+
+        let mtime = cr.try_read_mtime();
+        cr.sync_mtime(mtime);
+
+        assert!(!cr.has_changed_by_mtime());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn mtime_reloader_has_no_inotify_fd_or_events() {
+        let mut cr = ConfigReloader::init_mtime(PathBuf::from("config.kdl"));
+
+        assert!(cr.inotify_fd().is_none());
+        assert!(!cr.consume_inotify_events());
+        assert_eq!(cr.path(), Path::new("config.kdl"));
+    }
+
+    #[test]
     fn invalid_watch_falls_back_to_mtime() {
         let dir = unique_dir("fallback");
         let _ = fs::remove_dir_all(&dir);

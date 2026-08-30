@@ -200,3 +200,76 @@ pub fn ipc_reload() -> bool {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_iface() -> (WhichKeyIface, mpsc::Receiver<DBusCommand>, OwnedFd) {
+        let (tx, rx) = mpsc::channel();
+        let wake_fd = rustix::event::eventfd(
+            0,
+            rustix::event::EventfdFlags::NONBLOCK | rustix::event::EventfdFlags::CLOEXEC,
+        )
+        .unwrap();
+        let read_fd = wake_fd.try_clone().unwrap();
+        (WhichKeyIface { tx, wake_fd }, rx, read_fd)
+    }
+
+    fn assert_woken(fd: &OwnedFd) {
+        let mut bytes = [0; 8];
+        assert_eq!(rustix::io::read(fd, &mut bytes).unwrap(), bytes.len());
+        assert_eq!(u64::from_ne_bytes(bytes), 1);
+    }
+
+    #[test]
+    fn show_sends_command_and_wakes_event_loop() {
+        let (iface, rx, wake_fd) = test_iface();
+
+        iface.show().unwrap();
+
+        assert!(matches!(rx.recv().unwrap(), DBusCommand::Show));
+        assert_woken(&wake_fd);
+    }
+
+    #[test]
+    fn show_key_parses_key_and_sends_command() {
+        let (iface, rx, wake_fd) = test_iface();
+
+        iface.show_key("Ctrl+a").unwrap();
+
+        let DBusCommand::ShowKey(key) = rx.recv().unwrap() else {
+            panic!("expected ShowKey command");
+        };
+        assert_eq!(key, "Ctrl+a".parse().unwrap());
+        assert_woken(&wake_fd);
+    }
+
+    #[test]
+    fn invalid_show_key_does_not_send_or_wake() {
+        let (iface, rx, wake_fd) = test_iface();
+
+        assert!(iface.show_key("Ctrl++a").is_err());
+
+        assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+        let mut bytes = [0; 8];
+        assert_eq!(
+            rustix::io::read(&wake_fd, &mut bytes),
+            Err(rustix::io::Errno::AGAIN)
+        );
+    }
+
+    #[test]
+    fn quit_and_reload_send_their_commands() {
+        let (iface, rx, wake_fd) = test_iface();
+
+        iface.quit().unwrap();
+        iface.reload().unwrap();
+
+        assert!(matches!(rx.recv().unwrap(), DBusCommand::Quit));
+        assert!(matches!(rx.recv().unwrap(), DBusCommand::Reload));
+        let mut bytes = [0; 8];
+        rustix::io::read(&wake_fd, &mut bytes).unwrap();
+        assert_eq!(u64::from_ne_bytes(bytes), 2);
+    }
+}

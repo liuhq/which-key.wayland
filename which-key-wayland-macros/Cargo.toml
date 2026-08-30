@@ -14,3 +14,7 @@ proc-macro = true
 syn = { version = "2", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
+
+[dev-dependencies]
+anyhow = "1"
+kdl = "6.5.0"

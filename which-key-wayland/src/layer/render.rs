@@ -260,3 +260,55 @@ impl WkRender {
         );
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rounded_rectangle_requires_nonzero_dimensions_and_radius() {
+        assert!(WkRender::rounded_rect_path(100, 50, 8).is_some());
+        assert!(WkRender::rounded_rect_path(100, 50, 0).is_none());
+        assert!(WkRender::rounded_rect_path(0, 50, 8).is_none());
+        assert!(WkRender::rounded_rect_path(100, 0, 8).is_none());
+    }
+
+    #[test]
+    fn rounded_rectangle_clamps_oversized_radius() {
+        assert!(WkRender::rounded_rect_path(10, 6, u32::MAX).is_some());
+    }
+
+    #[test]
+    fn draw_renders_an_opaque_canvas_for_default_config() {
+        let config = Config::default();
+        let mut text = WkText::new(config.font.size, config.font.line_height);
+        let size = Size::new(config.layout.width, 100);
+        let mut canvas = vec![0; size.width() as usize * size.height() as usize * BYTES_PER_PIXEL];
+        let page = Page { items: Vec::new() };
+
+        WkRender::draw(&config, &mut text, size, &mut canvas, &page, None);
+
+        assert!(
+            canvas
+                .chunks_exact(BYTES_PER_PIXEL)
+                .all(|pixel| pixel[3] == OPAQUE_ALPHA)
+        );
+    }
+
+    #[test]
+    fn draw_preserves_transparent_corners_for_rounded_background() {
+        let mut config = Config::default();
+        config.layout.radius = 20;
+        let mut text = WkText::new(config.font.size, config.font.line_height);
+        let size = Size::new(config.layout.width, 100);
+        let mut canvas = vec![0; size.width() as usize * size.height() as usize * BYTES_PER_PIXEL];
+        let page = Page { items: Vec::new() };
+
+        WkRender::draw(&config, &mut text, size, &mut canvas, &page, None);
+
+        let center =
+            ((size.height() / 2 * size.width() + size.width() / 2) as usize) * BYTES_PER_PIXEL;
+        assert_eq!(canvas[3], 0);
+        assert_eq!(canvas[center + 3], OPAQUE_ALPHA);
+    }
+}

@@ -557,4 +557,77 @@ mod tests {
         assert!(first_level_group(&map, "b".parse().unwrap()).is_none());
         assert!(first_level_group(&map, missing_key).is_none());
     }
+
+    fn config_with_group() -> Config {
+        let child_key: Key = "t".parse().unwrap();
+        let group_key: Key = "a".parse().unwrap();
+        let action_key: Key = "b".parse().unwrap();
+        let mut children = BTreeMap::new();
+        children.insert(
+            child_key,
+            Bind {
+                bind: BindKind::Action(Vec::new()),
+                desc: "Terminal".to_string(),
+            },
+        );
+        let mut root = BTreeMap::new();
+        root.insert(
+            group_key,
+            Bind {
+                bind: BindKind::Group(KeyBindMap::new(children)),
+                desc: "Apps".to_string(),
+            },
+        );
+        root.insert(
+            action_key,
+            Bind {
+                bind: BindKind::Action(Vec::new()),
+                desc: "Browser".to_string(),
+            },
+        );
+        Config {
+            bind: KeyBindMap::new(root),
+            ..Config::default()
+        }
+    }
+
+    #[test]
+    fn calc_h_falls_back_to_root_for_missing_or_action_path() {
+        let config = config_with_group();
+        let mut text = WkText::new(config.font.size, config.font.line_height);
+        let root = WhichKey::calc_h(&config, &mut text, None, PageDirection::Forward, &[]);
+        let missing = WhichKey::calc_h(
+            &config,
+            &mut text,
+            None,
+            PageDirection::Forward,
+            &["z".parse().unwrap()],
+        );
+        let action = WhichKey::calc_h(
+            &config,
+            &mut text,
+            None,
+            PageDirection::Forward,
+            &["b".parse().unwrap()],
+        );
+
+        assert_eq!(missing, root);
+        assert_eq!(action, root);
+    }
+
+    #[test]
+    fn calc_h_handles_a_group_navigation_root() {
+        let config = config_with_group();
+        let mut text = WkText::new(config.font.size, config.font.line_height);
+
+        let height = WhichKey::calc_h(
+            &config,
+            &mut text,
+            None,
+            PageDirection::Forward,
+            &["a".parse().unwrap()],
+        );
+
+        assert!(height > config.with_padding(0));
+    }
 }

@@ -1795,6 +1795,8 @@ dependencies = [
 name = "which-key-wayland-macros"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "kdl",
  "proc-macro2",
  "quote",
  "syn",

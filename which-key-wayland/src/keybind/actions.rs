@@ -242,4 +242,37 @@ mod tests {
         assert_eq!(s.shell(), "bash");
         assert_eq!(s.command(), "echo hello");
     }
+
+    #[test]
+    fn spawn_run_reports_missing_program() {
+        let spawn = Spawn::new(
+            "/definitely/missing/which-key-test-program".to_string(),
+            Vec::new(),
+        );
+        assert!(spawn.run().is_err());
+    }
+
+    #[test]
+    fn shell_run_reports_missing_shell() {
+        let shell = Sh::new(
+            "/definitely/missing/which-key-test-shell".to_string(),
+            "true".to_string(),
+        );
+        assert!(shell.run().is_err());
+    }
+
+    #[test]
+    fn action_run_dispatches_to_spawn() {
+        let action = Action::Spawn(Spawn::new(
+            "sh".to_string(),
+            vec!["-c".to_string(), "true".to_string()],
+        ));
+        assert!(action.run().is_ok());
+    }
+
+    #[test]
+    fn action_run_dispatches_to_shell() {
+        let action = Action::Sh(Sh::new("/bin/sh".to_string(), "true".to_string()));
+        assert!(action.run().is_ok());
+    }
 }
