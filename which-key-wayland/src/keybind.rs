@@ -40,3 +40,24 @@ impl BindKind {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn action_uses_action_foreground_color() {
+        let colors = ConfigColor::default();
+        let bind = BindKind::Action(Vec::new());
+
+        assert_eq!(bind.fg_from(&colors), colors.fg_action.into());
+    }
+
+    #[test]
+    fn group_uses_group_foreground_color() {
+        let colors = ConfigColor::default();
+        let bind = BindKind::Group(KeyBindMap::default());
+
+        assert_eq!(bind.fg_from(&colors), colors.fg_group.into());
+    }
+}

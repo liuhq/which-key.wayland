@@ -326,3 +326,123 @@ fn default_expr_or_default(default_expr: &Option<syn::Expr>) -> proc_macro2::Tok
         None => quote!(Default::default()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use syn::parse_quote;
+
+    #[test]
+    fn parses_all_supported_field_attributes() {
+        let attrs: FieldAttrs = syn::parse_str("skip, default = 42, rename = \"answer\"").unwrap();
+
+        assert!(attrs.skip);
+        assert!(attrs.is_optional);
+        assert!(attrs.default_expr.is_some());
+        assert_eq!(attrs.rename.as_deref(), Some("answer"));
+    }
+
+    #[test]
+    fn bare_default_marks_field_optional() {
+        let attrs: FieldAttrs = syn::parse_str("default").unwrap();
+
+        assert!(attrs.is_optional);
+        assert!(attrs.default_expr.is_none());
+    }
+
+    #[test]
+    fn rejects_unknown_field_attribute() {
+        let error = syn::parse_str::<FieldAttrs>("unknown").err().unwrap();
+        assert!(error.to_string().contains("unexpected node attribute"));
+    }
+
+    #[test]
+    fn classifies_supported_scalar_types() {
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(u32)),
+            Some(ArgKind::U32)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(i32)),
+            Some(ArgKind::I32)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(f32)),
+            Some(ArgKind::F32)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(f64)),
+            Some(ArgKind::F64)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(String)),
+            Some(ArgKind::String)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(std::rc::Rc<str>)),
+            Some(ArgKind::RcStr)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(WkColor)),
+            Some(ArgKind::WkColor)
+        ));
+        assert!(matches!(
+            classify_arg_type(&parse_quote!(Anchor)),
+            Some(ArgKind::Anchor)
+        ));
+        assert!(classify_arg_type(&parse_quote!(Vec<String>)).is_none());
+    }
+
+    #[test]
+    fn converts_rust_names_to_kdl_names() {
+        assert_eq!(to_kdl_name("line_height"), "line-height");
+        assert_eq!(to_kdl_name("timeout"), "timeout");
+    }
+
+    #[test]
+    fn derive_rejects_enums_and_tuple_structs() {
+        let enum_input: DeriveInput = parse_quote!(
+            enum Example {
+                A,
+            }
+        );
+        let tuple_input: DeriveInput = parse_quote!(
+            struct Example(u32);
+        );
+
+        assert!(
+            impl_derive_kdl_parse(&enum_input)
+                .unwrap_err()
+                .to_string()
+                .contains("only supports structs")
+        );
+        assert!(
+            impl_derive_kdl_parse(&tuple_input)
+                .unwrap_err()
+                .to_string()
+                .contains("only supports named structs")
+        );
+    }
+
+    #[test]
+    fn derive_generates_default_only_when_every_field_has_one() {
+        let all_optional: DeriveInput = parse_quote! {
+            struct OptionalConfig {
+                #[node(default = 10)]
+                width: u32,
+                #[node(skip)]
+                ignored: String,
+            }
+        };
+        let required: DeriveInput = parse_quote! {
+            struct RequiredConfig {
+                width: u32,
+            }
+        };
+
+        let optional_tokens = impl_derive_kdl_parse(&all_optional).unwrap().to_string();
+        let required_tokens = impl_derive_kdl_parse(&required).unwrap().to_string();
+        assert!(optional_tokens.contains("impl Default for OptionalConfig"));
+        assert!(!required_tokens.contains("impl Default for RequiredConfig"));
+    }
+}

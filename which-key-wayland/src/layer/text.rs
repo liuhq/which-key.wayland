@@ -129,3 +129,36 @@ impl WkText {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_input_has_zero_max_width() {
+        let mut text = WkText::new(16.0, 20.0);
+        assert_eq!(text.max_width(Vec::new()), 0);
+    }
+
+    #[test]
+    fn max_width_uses_the_widest_input() {
+        let mut text = WkText::new(16.0, 20.0);
+        let narrow = text.max_width(vec!["i"]);
+        let wide = text.max_width(vec!["iiii"]);
+        let combined = text.max_width(vec!["i", "iiii"]);
+
+        assert!(narrow > 0);
+        assert!(wide >= narrow);
+        assert_eq!(combined, wide);
+    }
+
+    #[test]
+    fn line_height_grows_when_text_wraps() {
+        let mut text = WkText::new(16.0, 20.0);
+        let one_line = text.lines_h("word", 500);
+        let wrapped = text.lines_h("word word word word", 20);
+
+        assert!(one_line > 0);
+        assert!(wrapped > one_line);
+    }
+}

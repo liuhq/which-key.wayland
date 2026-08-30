@@ -66,4 +66,43 @@ mod tests {
         assert_eq!(c.layout.margin.bottom, 0);
         assert_eq!(c.layout.margin.left, 0);
     }
+
+    #[test]
+    fn parse_rejects_wrong_scalar_type() {
+        let error = config_parse("timeout \"slow\"").unwrap_err();
+        assert!(error.to_string().contains("unexpected KDL value type"));
+    }
+
+    #[test]
+    fn parse_rejects_invalid_anchor() {
+        let error = config_parse("layout { anchor 5; }").unwrap_err();
+        assert!(error.to_string().contains("invalid anchor value 5"));
+    }
+
+    #[test]
+    fn parse_rejects_invalid_color() {
+        let error = config_parse("color { fg-key \"not-a-color\"; }").unwrap_err();
+        assert!(error.to_string().contains("invalid hex color"));
+    }
+
+    #[test]
+    fn parse_rejects_u32_overflow() {
+        let error = config_parse("layout { width 4294967296; }").unwrap_err();
+        assert!(error.to_string().contains("integer overflow"));
+    }
+
+    #[test]
+    fn parse_uses_kebab_case_names_and_nested_values() {
+        let config = config_parse(
+            "font { size 18.0; line-height 24.0; }\nlayout { margin { top 1; right 2; bottom 3; left 4; } }",
+        )
+        .unwrap();
+
+        assert_eq!(config.font.size, 18.0);
+        assert_eq!(config.font.line_height, 24.0);
+        assert_eq!(config.layout.margin.top, 1);
+        assert_eq!(config.layout.margin.right, 2);
+        assert_eq!(config.layout.margin.bottom, 3);
+        assert_eq!(config.layout.margin.left, 4);
+    }
 }
