@@ -290,8 +290,8 @@ mod tests {
 
         assert!(
             canvas
-                .chunks_exact(BYTES_PER_PIXEL)
-                .all(|pixel| pixel[3] == OPAQUE_ALPHA)
+                .chunks(BYTES_PER_PIXEL)
+                .all(|pixel| pixel.len() == BYTES_PER_PIXEL && pixel[3] == OPAQUE_ALPHA)
         );
     }
 
