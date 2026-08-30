@@ -5,8 +5,12 @@ fn main() {
     env_logger::init();
 
     match Cli::parse().command {
-        Some(SubCommand::Show) => {
-            ipc::ipc_show();
+        Some(SubCommand::Show { key }) => {
+            if let Some(key) = key {
+                ipc::ipc_show_key(&key);
+            } else {
+                ipc::ipc_show();
+            }
             return;
         }
         Some(SubCommand::Quit) => {

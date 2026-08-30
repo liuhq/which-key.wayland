@@ -86,12 +86,16 @@ The program runs as a background daemon, communicating over the D-Bus session bu
 ```sh
 which-key-wayland         # start the daemon and show the panel (wakes up if already running)
 which-key-wayland show    # send show command to the running instance
+which-key-wayland show a  # show the children of the first-level `a` group
 which-key-wayland reload  # force reload the configuration file
 which-key-wayland quit    # quit the daemon
 ```
 
 It is recommended to bind a hotkey to `which-key-wayland` in your window manager/compositor. The program automatically
 handles first launch and subsequent invocations.
+
+`show <key>` accepts the same key syntax as the `bind` section, including combinations such as `Ctrl+a`. If the key is
+not a first-level group, or does not exist in the current configuration, the panel falls back to the full bind list.
 
 Examples:
 
