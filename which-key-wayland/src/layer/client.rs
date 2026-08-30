@@ -557,7 +557,6 @@ mod tests {
         assert!(first_level_group(&map, "b".parse().unwrap()).is_none());
         assert!(first_level_group(&map, missing_key).is_none());
     }
-
     fn config_with_group() -> Config {
         let child_key: Key = "t".parse().unwrap();
         let group_key: Key = "a".parse().unwrap();
