@@ -48,6 +48,13 @@ pub enum AppState {
     Exiting,
 }
 
+fn first_level_group(map: &KeyBindMap, key: Key) -> Option<Key> {
+    map.map
+        .get(&key)
+        .is_some_and(|bind| matches!(&bind.bind, BindKind::Group(_)))
+        .then_some(key)
+}
+
 pub struct WhichKey {
     pub registry_state: RegistryState,
     pub output_state: OutputState,
@@ -71,6 +78,7 @@ pub struct WhichKey {
     pub prev_cursor: Option<usize>,
     pub modifiers: Modifiers,
     pub key_path: Vec<Key>,
+    pub navigation_root_depth: usize,
     pub last_key_time: Option<Instant>,
 
     pub dbus_rx: mpsc::Receiver<ipc::DBusCommand>,
@@ -138,6 +146,7 @@ impl WhichKey {
                 prev_cursor: None,
                 modifiers: Modifiers::default(),
                 key_path: Vec::new(),
+                navigation_root_depth: 0,
                 last_key_time: None,
 
                 dbus_rx,
@@ -152,6 +161,7 @@ impl WhichKey {
     pub fn hide_overlay(&mut self) {
         log::info!("Hiding overlay");
         self.key_path.clear();
+        self.navigation_root_depth = 0;
         self.next_cursor = None;
         self.prev_cursor = None;
         self.last_key_time = None;
@@ -164,6 +174,10 @@ impl WhichKey {
     }
 
     pub fn show_overlay(&mut self, qh: &QueueHandle<Self>) {
+        self.show_overlay_with_key(qh, None);
+    }
+
+    fn show_overlay_with_key(&mut self, qh: &QueueHandle<Self>, key: Option<Key>) {
         if self.layer.is_some() {
             self.hide_overlay();
         }
@@ -173,6 +187,13 @@ impl WhichKey {
         {
             log::debug!("check mtime -> config changed");
             self.reload_config();
+        }
+
+        self.key_path.clear();
+        self.navigation_root_depth = 0;
+        if let Some(key) = key.and_then(|key| first_level_group(&self.config.bind, key)) {
+            self.key_path.push(key);
+            self.navigation_root_depth = 1;
         }
 
         let height = Self::calc_h(
@@ -227,12 +248,11 @@ impl WhichKey {
                 match cmd {
                     ipc::DBusCommand::Show => {
                         log::debug!("DBus::Show");
-                        if matches!(self.state, AppState::Hidden) {
-                            self.show_overlay(&event_queue.handle());
-                        } else {
-                            self.hide_overlay();
-                            self.show_overlay(&event_queue.handle());
-                        }
+                        self.show_overlay(&event_queue.handle());
+                    }
+                    ipc::DBusCommand::ShowKey(key) => {
+                        log::debug!("DBus::ShowKey({key})");
+                        self.show_overlay_with_key(&event_queue.handle(), Some(key));
                     }
                     ipc::DBusCommand::Quit => {
                         log::debug!("DBus::Quit");
@@ -501,5 +521,40 @@ impl WhichKey {
         total_lines += separator + footer;
 
         total_lines
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+    use crate::keybind::{Bind, BindKind};
+
+    #[test]
+    fn first_level_group_accepts_only_groups() {
+        let group_key: Key = "a".parse().unwrap();
+        let action_key: Key = "b".parse().unwrap();
+        let missing_key: Key = "c".parse().unwrap();
+        let mut map = BTreeMap::new();
+        map.insert(
+            group_key,
+            Bind {
+                bind: BindKind::Group(KeyBindMap::default()),
+                desc: "Apps".to_string(),
+            },
+        );
+        map.insert(
+            action_key,
+            Bind {
+                bind: BindKind::Action(Vec::new()),
+                desc: "Browser".to_string(),
+            },
+        );
+        let map = KeyBindMap::new(map);
+
+        assert!(first_level_group(&map, "a".parse().unwrap()).is_some());
+        assert!(first_level_group(&map, "b".parse().unwrap()).is_none());
+        assert!(first_level_group(&map, missing_key).is_none());
     }
 }

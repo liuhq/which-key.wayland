@@ -4,12 +4,15 @@ use std::sync::mpsc;
 use zbus::blocking::{Connection, MessageIterator, connection::Builder};
 use zbus::{self, interface};
 
+use crate::keybind::key::Key;
+
 pub const DBUS_NAME: &str = "com.hrtius.WhichKey";
 pub const DBUS_PATH: &str = "/com/hrtius/WhichKey";
 
 #[derive(Debug)]
 pub enum DBusCommand {
     Show,
+    ShowKey(Key),
     Quit,
     Reload,
 }
@@ -23,6 +26,14 @@ struct WhichKeyIface {
 impl WhichKeyIface {
     fn show(&self) -> zbus::fdo::Result<()> {
         self.send(DBusCommand::Show);
+        Ok(())
+    }
+
+    fn show_key(&self, key: &str) -> zbus::fdo::Result<()> {
+        let key = key
+            .parse()
+            .map_err(|e: anyhow::Error| zbus::fdo::Error::InvalidArgs(e.to_string()))?;
+        self.send(DBusCommand::ShowKey(key));
         Ok(())
     }
 
@@ -134,6 +145,23 @@ pub fn ipc_show() -> bool {
         Ok(_) => true,
         Err(e) => {
             log::warn!("D-Bus Show call failed: {e}");
+            false
+        }
+    }
+}
+
+pub fn ipc_show_key(key: &str) -> bool {
+    let conn = match Connection::session() {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("Failed to connect to DBus session bus: {e}");
+            return false;
+        }
+    };
+    match conn.call_method(Some(DBUS_NAME), DBUS_PATH, Some(DBUS_NAME), "ShowKey", &key) {
+        Ok(_) => true,
+        Err(e) => {
+            log::warn!("D-Bus ShowKey call failed: {e}");
             false
         }
     }

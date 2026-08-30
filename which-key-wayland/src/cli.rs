@@ -1,9 +1,15 @@
 use clap::{Parser, Subcommand};
 
+use crate::keybind::key::Key;
+
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum SubCommand {
     /// Show which-key pannel
-    Show,
+    Show {
+        /// Show the children of this first-level group key
+        #[arg(value_name = "KEY", value_parser = parse_key)]
+        key: Option<String>,
+    },
     /// Quit which-key-wayland
     Quit,
     /// Force reload configuration file
@@ -16,6 +22,13 @@ pub enum SubCommand {
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<SubCommand>,
+}
+
+fn parse_key(value: &str) -> Result<String, String> {
+    value
+        .parse::<Key>()
+        .map(|_| value.to_string())
+        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
@@ -32,7 +45,30 @@ mod tests {
     #[test]
     fn parse_show_subcommand() {
         let cli = Cli::try_parse_from(["which-key-wayland", "show"]).unwrap();
-        assert_eq!(cli.command, Some(SubCommand::Show));
+        assert_eq!(cli.command, Some(SubCommand::Show { key: None }));
+    }
+
+    #[test]
+    fn parse_show_with_key() {
+        let cli = Cli::try_parse_from(["which-key-wayland", "show", "Ctrl+a"]).unwrap();
+        assert_eq!(
+            cli.command,
+            Some(SubCommand::Show {
+                key: Some("Ctrl+a".to_string())
+            })
+        );
+    }
+
+    #[test]
+    fn parse_show_with_invalid_key() {
+        let result = Cli::try_parse_from(["which-key-wayland", "show", "Ctrl++a"]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_show_with_too_many_keys() {
+        let result = Cli::try_parse_from(["which-key-wayland", "show", "a", "b"]);
+        assert!(result.is_err());
     }
 
     #[test]

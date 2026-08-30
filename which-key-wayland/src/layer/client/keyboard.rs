@@ -16,6 +16,10 @@ use crate::{
     layer::client::WhichKey,
 };
 
+fn can_navigate_back(path_len: usize, navigation_root_depth: usize) -> bool {
+    path_len > navigation_root_depth
+}
+
 fn keysym_to_key_string(keysym: Keysym, modifiers: &Modifiers) -> Option<String> {
     let name = xkbcommon::xkb::keysym_get_name(keysym);
     if name.is_empty() {
@@ -96,7 +100,8 @@ impl KeyboardHandler for WhichKey {
         self.last_key_time = Some(Instant::now());
 
         if event.keysym == Keysym::Escape {
-            if self.key_path.pop().is_some() {
+            if can_navigate_back(self.key_path.len(), self.navigation_root_depth) {
+                self.key_path.pop();
                 self.next_cursor = None;
                 self.prev_cursor = None;
                 self.draw(None, PageDirection::Forward);
@@ -215,6 +220,13 @@ mod tests {
             logo,
             ..Modifiers::default()
         }
+    }
+
+    #[test]
+    fn escape_respects_navigation_root() {
+        assert!(!can_navigate_back(0, 0));
+        assert!(!can_navigate_back(1, 1));
+        assert!(can_navigate_back(2, 1));
     }
 
     #[test]
