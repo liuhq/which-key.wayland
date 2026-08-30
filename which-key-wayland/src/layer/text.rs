@@ -135,12 +135,14 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn empty_input_has_zero_max_width() {
         let mut text = WkText::new(16.0, 20.0);
         assert_eq!(text.max_width(Vec::new()), 0);
     }
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn max_width_uses_the_widest_input() {
         let mut text = WkText::new(16.0, 20.0);
         let narrow = text.max_width(vec!["i"]);
@@ -153,6 +155,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn line_height_grows_when_text_wraps() {
         let mut text = WkText::new(16.0, 20.0);
         let one_line = text.lines_h("word", 500);

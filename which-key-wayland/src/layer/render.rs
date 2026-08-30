@@ -279,6 +279,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn draw_renders_an_opaque_canvas_for_default_config() {
         let config = Config::default();
         let mut text = WkText::new(config.font.size, config.font.line_height);
@@ -296,6 +297,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn draw_preserves_transparent_corners_for_rounded_background() {
         let mut config = Config::default();
         config.layout.radius = 20;
