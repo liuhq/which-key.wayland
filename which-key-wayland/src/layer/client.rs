@@ -591,6 +591,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn calc_h_falls_back_to_root_for_missing_or_action_path() {
         let config = config_with_group();
         let mut text = WkText::new(config.font.size, config.font.line_height);
@@ -615,6 +616,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an available system font"]
     fn calc_h_handles_a_group_navigation_root() {
         let config = config_with_group();
         let mut text = WkText::new(config.font.size, config.font.line_height);
