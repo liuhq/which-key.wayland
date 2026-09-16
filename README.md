@@ -84,15 +84,18 @@ cargo build --release
 The program runs as a background daemon, communicating over the D-Bus session bus.
 
 ```sh
-which-key-wayland         # start the daemon and show the panel (wakes up if already running)
-which-key-wayland show    # send show command to the running instance
-which-key-wayland show a  # show the children of the first-level `a` group
+which-key-wayland         # start and show the panel, or toggle it if the daemon is running
+which-key-wayland show    # toggle the panel in the running instance
+which-key-wayland show a  # toggle the panel with the first-level `a` group selected
 which-key-wayland reload  # force reload the configuration file
 which-key-wayland quit    # quit the daemon
 ```
 
 It is recommended to bind a hotkey to `which-key-wayland` in your window manager/compositor. The program automatically
 handles first launch and subsequent invocations.
+
+When the daemon is already running, invoking `which-key-wayland`, `which-key-wayland show`, or
+`which-key-wayland show <key>` toggles the panel: a visible panel is hidden, and a hidden panel is shown.
 
 `show <key>` accepts the same key syntax as the `bind` section, including combinations such as `Ctrl+a`. If the key is
 not a first-level group, or does not exist in the current configuration, the panel falls back to the full bind list.
@@ -247,11 +250,12 @@ The program communicates over the D-Bus session bus:
 - **Interface name:** `com.hrtius.WhichKey`
 - **Object path:** `/com/hrtius/WhichKey`
 
-| Method   | Description          |
-|----------|----------------------|
-| `Show`   | show/redraw panel    |
-| `Reload` | reload configuration |
-| `Quit`   | quit the daemon      |
+| Method    | Description                                      |
+|-----------|--------------------------------------------------|
+| `Show`    | toggle panel visibility                          |
+| `ShowKey` | toggle the panel with a first-level group selected |
+| `Reload`  | reload configuration                             |
+| `Quit`    | quit the daemon                                  |
 
 ## License
 
