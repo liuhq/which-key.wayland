@@ -48,6 +48,23 @@ pub enum AppState {
     Exiting,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OverlayToggleAction {
+    Show,
+    Hide,
+    Ignore,
+}
+
+impl From<AppState> for OverlayToggleAction {
+    fn from(value: AppState) -> Self {
+        match value {
+            AppState::Showing => OverlayToggleAction::Hide,
+            AppState::Hidden => OverlayToggleAction::Show,
+            AppState::Exiting => OverlayToggleAction::Ignore,
+        }
+    }
+}
+
 fn first_level_group(map: &KeyBindMap, key: Key) -> Option<Key> {
     map.map
         .get(&key)
@@ -158,6 +175,14 @@ impl WhichKey {
 }
 
 impl WhichKey {
+    fn toggle_overlay_with_key(&mut self, qh: &QueueHandle<Self>, key: Option<Key>) {
+        match OverlayToggleAction::from(self.state) {
+            OverlayToggleAction::Show => self.show_overlay_with_key(qh, key),
+            OverlayToggleAction::Hide => self.hide_overlay(),
+            OverlayToggleAction::Ignore => {}
+        }
+    }
+
     pub fn hide_overlay(&mut self) {
         log::info!("Hiding overlay");
         self.key_path.clear();
@@ -171,10 +196,6 @@ impl WhichKey {
             kbd.release();
         }
         self.state = AppState::Hidden;
-    }
-
-    pub fn show_overlay(&mut self, qh: &QueueHandle<Self>) {
-        self.show_overlay_with_key(qh, None);
     }
 
     fn show_overlay_with_key(&mut self, qh: &QueueHandle<Self>, key: Option<Key>) {
@@ -248,11 +269,11 @@ impl WhichKey {
                 match cmd {
                     ipc::DBusCommand::Show => {
                         log::debug!("DBus::Show");
-                        self.show_overlay(&event_queue.handle());
+                        self.toggle_overlay_with_key(&event_queue.handle(), None);
                     }
                     ipc::DBusCommand::ShowKey(key) => {
                         log::debug!("DBus::ShowKey({key})");
-                        self.show_overlay_with_key(&event_queue.handle(), Some(key));
+                        self.toggle_overlay_with_key(&event_queue.handle(), Some(key));
                     }
                     ipc::DBusCommand::Quit => {
                         log::debug!("DBus::Quit");
@@ -630,5 +651,21 @@ mod tests {
         );
 
         assert!(height > config.with_padding(0));
+    }
+
+    #[test]
+    fn overlay_toggle_action_follows_app_state() {
+        assert_eq!(
+            OverlayToggleAction::from(AppState::Showing),
+            OverlayToggleAction::Hide
+        );
+        assert_eq!(
+            OverlayToggleAction::from(AppState::Hidden),
+            OverlayToggleAction::Show
+        );
+        assert_eq!(
+            OverlayToggleAction::from(AppState::Exiting),
+            OverlayToggleAction::Ignore
+        );
     }
 }
