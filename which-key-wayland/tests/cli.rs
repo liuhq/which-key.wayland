@@ -13,7 +13,7 @@ fn help_is_available_from_the_binary() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("Usage: which-key-wayland [COMMAND]"));
+    assert!(stdout.contains("Usage: which-key-wayland <COMMAND>"));
     assert!(stdout.contains("show"));
     assert!(stdout.contains("reload"));
     assert!(stdout.contains("quit"));

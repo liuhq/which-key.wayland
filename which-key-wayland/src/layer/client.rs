@@ -121,21 +121,6 @@ impl WhichKey {
         let layer_shell = LayerShell::bind(&globals, &qh).expect("wlr_layer_shell not available");
         let shm = Shm::bind(&globals, &qh).expect("wl_shm not available");
 
-        let surface = compositor.create_surface(&qh);
-        let layer =
-            layer_shell.create_layer_surface(&qh, surface, Layer::Overlay, Some("wk_layer"), None);
-
-        layer.set_anchor(config.layout.anchor);
-        layer.set_margin(
-            config.layout.margin.top,
-            config.layout.margin.right,
-            config.layout.margin.bottom,
-            config.layout.margin.left,
-        );
-        layer.set_keyboard_interactivity(KeyboardInteractivity::OnDemand);
-        layer.set_size(config.layout.width, init_height);
-        layer.commit();
-
         let pool = SlotPool::new((config.layout.width * 4 * init_height) as usize, &shm)
             .expect("Failed to create pool");
 
@@ -149,11 +134,11 @@ impl WhichKey {
                 shm,
                 pool,
                 buffer: None,
-                layer: Some(layer),
+                layer: None,
                 keyboard: None,
                 wl_seat: None,
 
-                state: AppState::Showing,
+                state: AppState::Hidden,
                 first_configure: true,
                 timeout: Duration::from_millis(config.timeout as u64),
                 config: Rc::new(config),

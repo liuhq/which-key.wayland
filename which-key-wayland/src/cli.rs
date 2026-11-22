@@ -21,7 +21,7 @@ pub enum SubCommand {
 /// A key-hint panel for Wayland, inspired by the Neovim plugin which-key.nvim and the Helix editor style.
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Option<SubCommand>,
+    pub command: SubCommand,
 }
 
 fn parse_key(value: &str) -> Result<String, String> {
@@ -38,14 +38,14 @@ mod tests {
 
     #[test]
     fn parse_no_subcommand() {
-        let cli = Cli::try_parse_from(["which-key-wayland"]).unwrap();
-        assert!(cli.command.is_none());
+        let result = Cli::try_parse_from(["which-key-wayland"]);
+        assert!(result.is_err());
     }
 
     #[test]
     fn parse_show_subcommand() {
         let cli = Cli::try_parse_from(["which-key-wayland", "show"]).unwrap();
-        assert_eq!(cli.command, Some(SubCommand::Show { key: None }));
+        assert_eq!(cli.command, SubCommand::Show { key: None });
     }
 
     #[test]
@@ -53,9 +53,9 @@ mod tests {
         let cli = Cli::try_parse_from(["which-key-wayland", "show", "Ctrl+a"]).unwrap();
         assert_eq!(
             cli.command,
-            Some(SubCommand::Show {
+            SubCommand::Show {
                 key: Some("Ctrl+a".to_string())
-            })
+            }
         );
     }
 
@@ -74,13 +74,13 @@ mod tests {
     #[test]
     fn parse_quit_subcommand() {
         let cli = Cli::try_parse_from(["which-key-wayland", "quit"]).unwrap();
-        assert_eq!(cli.command, Some(SubCommand::Quit));
+        assert_eq!(cli.command, SubCommand::Quit);
     }
 
     #[test]
     fn parse_reload_subcommand() {
         let cli = Cli::try_parse_from(["which-key-wayland", "reload"]).unwrap();
-        assert_eq!(cli.command, Some(SubCommand::Reload));
+        assert_eq!(cli.command, SubCommand::Reload);
     }
 
     #[test]
