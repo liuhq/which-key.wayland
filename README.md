@@ -20,7 +20,7 @@ paru -S which-key-wayland
 
 #### :snowflake: Quick Try
 
-If you have Nix installed or are using NixOS, you can run it directly:
+If you have Nix installed or are using NixOS, you can view the CLI help:
 
 ```sh
 nix run github:liuhq/which-key.wayland
@@ -75,7 +75,7 @@ git clone https://github.com/liuhq/which-key.wayland.git
 cd which-key.wayland
 # build
 cargo build --release
-# run
+# view CLI help
 ./target/release/which-key-wayland
 ```
 
@@ -84,18 +84,18 @@ cargo build --release
 The program runs as a background daemon, communicating over the D-Bus session bus.
 
 ```sh
-which-key-wayland         # start and show the panel, or toggle it if the daemon is running
-which-key-wayland show    # toggle the panel in the running instance
-which-key-wayland show a  # toggle the panel with the first-level `a` group selected
+which-key-wayland         # display CLI help
+which-key-wayland show    # start and show the panel, or toggle it if the daemon is running
+which-key-wayland show a  # start and show the `a` group, or toggle it if the daemon is running
 which-key-wayland reload  # force reload the configuration file
 which-key-wayland quit    # quit the daemon
 ```
 
-It is recommended to bind a hotkey to `which-key-wayland` in your window manager/compositor. The program automatically
-handles first launch and subsequent invocations.
+It is recommended to bind a hotkey to `which-key-wayland show` in your window manager/compositor. Both `show` and
+`show <key>` automatically start the daemon if needed and open the panel.
 
-When the daemon is already running, invoking `which-key-wayland`, `which-key-wayland show`, or
-`which-key-wayland show <key>` toggles the panel: a visible panel is hidden, and a hidden panel is shown.
+When the daemon is already running, invoking `which-key-wayland show` or `which-key-wayland show <key>` toggles the
+panel: a visible panel is hidden, and a hidden panel is shown.
 
 `show <key>` accepts the same key syntax as the `bind` section, including combinations such as `Ctrl+a`. If the key is
 not a first-level group, or does not exist in the current configuration, the panel falls back to the full bind list.
@@ -106,14 +106,14 @@ Examples:
 
 ```kdl
 binds {
-    Mod+Space { spawn "which-key-wayland"; }
+    Mod+Space { spawn "which-key-wayland" "show"; }
 }
 ```
 
 **Hyprland** (`$XDG_CONFIG_HOME/hypr/hyprland.conf`):
 
 ```text
-bind = $mainMod, Space, exec, which-key-wayland
+bind = $mainMod, Space, exec, which-key-wayland show
 ```
 
 ## Configuration

@@ -1,6 +1,7 @@
 use std::os::fd::OwnedFd;
 use std::sync::mpsc;
 
+use anyhow::Context;
 use zbus::blocking::{Connection, MessageIterator, connection::Builder};
 use zbus::{self, interface};
 
@@ -56,65 +57,38 @@ impl WhichKeyIface {
     }
 }
 
-pub fn init() -> Option<(mpsc::Receiver<DBusCommand>, OwnedFd)> {
+pub fn init() -> anyhow::Result<Option<(mpsc::Receiver<DBusCommand>, OwnedFd)>> {
     let (tx, rx) = mpsc::channel();
 
-    let wake_fd = match rustix::event::eventfd(
+    let wake_fd = rustix::event::eventfd(
         0,
         rustix::event::EventfdFlags::NONBLOCK | rustix::event::EventfdFlags::CLOEXEC,
-    ) {
-        Ok(fd) => fd,
-        Err(e) => {
-            log::error!("Failed to create eventfd: {e}");
-            return None;
-        }
-    };
+    )
+    .context("Failed to create eventfd")?;
 
-    let wake_fd_dbus = match wake_fd.try_clone() {
-        Ok(fd) => fd,
-        Err(e) => {
-            log::error!("Failed to clone eventfd: {e}");
-            return None;
-        }
-    };
+    let wake_fd_dbus = wake_fd.try_clone().context("Failed to clone eventfd")?;
 
     let iface = WhichKeyIface {
         tx,
         wake_fd: wake_fd_dbus,
     };
 
-    let conn = match Builder::session() {
-        Ok(b) => b,
-        Err(e) => {
-            log::error!("Failed to connect to DBus session bus: {e}");
-            return None;
-        }
-    };
-
-    let conn = match conn
+    let conn = Builder::session()
+        .context("Failed to connect to DBus session bus")?
+        .allow_name_replacements(false)
+        .replace_existing_names(false)
         .name(DBUS_NAME)
-        .and_then(|b| b.serve_at(DBUS_PATH, iface))
-    {
-        Ok(b) => b,
-        Err(e) => {
-            log::error!("Failed to set up DBus interface: {e}");
-            return None;
-        }
-    };
+        .context("Failed to set DBus name")?
+        .serve_at(DBUS_PATH, iface)
+        .context("Failed to set up DBus interface")?;
 
     match conn.build() {
         Ok(conn) => {
             start_dbus_server(conn);
-            Some((rx, wake_fd))
+            Ok(Some((rx, wake_fd)))
         }
-        Err(zbus::Error::NameTaken) => {
-            ipc_show();
-            None
-        }
-        Err(e) => {
-            log::error!("Failed to build DBus connection: {e}");
-            None
-        }
+        Err(zbus::Error::NameTaken) => Ok(None),
+        Err(e) => Err(e).context("Failed to build DBus connection"),
     }
 }
 
